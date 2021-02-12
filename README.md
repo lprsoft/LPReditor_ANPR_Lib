@@ -59,7 +59,7 @@ This id must be passed, as a parameter, to the two others functions. Second you 
 - 4 parameters, to access the image, (preloaded) in memory.
 - a pointer to a (preallocated) c string (to return the license plate number)
 
-Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector (important pass, as parameter, the id returnned by *init_session*). 
+Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_session*). 
 ```javascript
 //step 1 declare a global instance of ONNX Runtime api
 const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
