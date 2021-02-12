@@ -1,0 +1,1 @@
+sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test

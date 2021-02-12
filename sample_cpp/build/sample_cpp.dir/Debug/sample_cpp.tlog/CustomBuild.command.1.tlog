@@ -1,0 +1,10 @@
+^D:\PROGRAMMATION\LPREDITOR-ENGINE\LPREDITOR_ANPR_LIB\SAMPLE_CPP\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/sample_cpp -BD:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/sample_cpp/build --check-stamp-file D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/sample_cpp/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

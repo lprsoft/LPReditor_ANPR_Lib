@@ -1,0 +1,8 @@
+﻿  Building Custom Rule D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/sample_cpp/CMakeLists.txt
+  sample_cpp.cpp
+D:\Programmation\LPReditor-engine\LPReditor_ANPR_Lib\sample_cpp\sample_cpp.cpp(152,15): warning C4129: 'D' : caractère de séquence d'échappement non reconnu
+  stdafx.cpp
+  Levenshtein.cpp
+  utils_image_file.cpp
+  Génération de code en cours...
+  sample_cpp.vcxproj -> D:\Programmation\LPReditor-engine\LPReditor_ANPR_Lib\build\Debug\sample_cpp.exe
