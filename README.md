@@ -53,12 +53,12 @@ From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt
 
 # Calling the API in your code
 The use of the library is pretty straighforward and decomposes in three distinct steps :
-At first, engine initialization via the function init_session. It initializes a new detector, by loading its model file and it returns a (unique) id. 
-This id must be passed as a parameter, to the two others functions. Second you call the detect function to recognize the license plates in images. The parameters of the detect function are :
+At first, engine initialization, via calling the function *init_session*. It initializes a new detector, by loading its model file and returns a (unique) id. 
+This id must be passed, as a parameter, to the two others functions. Second you call the *detect* function, to recognize license plates in images. The parameters of the *detect* function are :
 - the id returned by init_session.
-- 4 parameters, to access the image that has been previously allocated in memory.
+- 4 parameters, to access the image, already allocated in memory.
 - a pointer to a preallocated c string (to return the license plate number)
-Third, when you are finished with reading images you must call the close_session to free the memory used by the detector
+Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector
 ```javascript
 //step 1 declare a global instance of ONNX Runtime api
 const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
