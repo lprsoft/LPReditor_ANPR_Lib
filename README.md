@@ -52,14 +52,13 @@ From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt
 ### Step 4 : make in the build LPReditor_ANPR/build dir
 
 # Calling the API in your code
-The use of the library is pretty straighforward and decomposes in three distinct steps :
-At first, engine initialization, via calling the function *init_session*. It initializes a new detector, by loading its model file and returns a (unique) id. 
-This id must be passed, as a parameter, to the two others functions. Second you call the *detect* function, to recognize license plates in images. The parameters of the *detect* function are :
+The use of the library is pretty straighforward and decomposes in three distinct steps. At first, engine initialization, via calling the function *init_session*. It initializes a new detector, by loading its model file and returns a (unique) id. 
+This id must be passed, as a parameter, to the two others functions. Second, call the *detect* function, to recognize license plates in images. Parameters of the *detect* function are :
 - the id returned by *init_session*.
 - 4 parameters, to access the image, (preloaded) in memory.
-- a pointer to a (preallocated) c string (to return the license plate number)
+- a pointer to a (preallocated) c string (filled, in return, with the license plate number string)
 
-Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_session*). 
+Third, when reading images is ended, call the *close_session* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_session*). 
 ```javascript
 
 //step 1 : initializes a new detector, by loading its model file. In return, you get a unique id.
