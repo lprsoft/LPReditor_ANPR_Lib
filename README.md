@@ -171,7 +171,9 @@ Note that the binary release, sample_cpp, is available in the repo :
 As said, to run the binary, you have to :
 - install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install_dir_on_windows)
 - copy also the onnxruntime library in the [installation dir](#Install_dir_on_linux)
+
 <a name="Command_line_syntax">
+	
 ## Command line syntax
 Below is the syntax : 
 sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
