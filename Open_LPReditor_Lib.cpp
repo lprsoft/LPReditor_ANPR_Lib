@@ -80,7 +80,7 @@ std::mutex mtx;           // mutex for critical section
 const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 std::list<Ort::Env*> envs;
 std::list<Ort::SessionOptions*> lsessionOptions;
-std::list<Yolov5_anpr_onxx_detector *> detectors;
+std::list<Yolov5_anpr_onxx_detector*> detectors;
 //detectors_ids : a list that contains the ids of all the detectors that are currently allocated by the library
 std::list<size_t> detectors_ids;
 //*****************************************************************************
@@ -128,7 +128,7 @@ std::list<Yolov5_anpr_onxx_detector*>::const_iterator get_detector(size_t id, co
 	@return a new id
 	@see
 	*/
-size_t get_new_id(const std::list<size_t> & detectors_ids) {
+size_t get_new_id(const std::list<size_t>& detectors_ids) {
 	if (detectors_ids.size()) {
 		auto result = std::minmax_element(detectors_ids.begin(), detectors_ids.end());
 		return *result.second + 1;
@@ -139,16 +139,16 @@ size_t get_new_id(const std::list<size_t> & detectors_ids) {
 
 /**
 	@brief this func is used internally --> to free heap allocated memeory
-@param detectors_ids : a list that contains the ids of all the detectors that are currently allocated by the library	
+@param detectors_ids : a list that contains the ids of all the detectors that are currently allocated by the library
 	@param id : unique interger to identify the detector to be freed
 	@return true upon success
 	@see
 	*/
-bool close_session(size_t id, std::list<Ort::Env*> & _envs, std::list<Ort::SessionOptions*> & _lsessionOptions, std::list<Yolov5_anpr_onxx_detector*> & _detectors,
-std::list<size_t> & _detectors_ids) {
+bool close_session(size_t id, std::list<Ort::Env*>& _envs, std::list<Ort::SessionOptions*>& _lsessionOptions, std::list<Yolov5_anpr_onxx_detector*>& _detectors,
+	std::list<size_t>& _detectors_ids) {
 	assert(_detectors_ids.size() == _detectors.size()
-	&& _detectors_ids.size() == _envs.size()
-	&& _detectors_ids.size() ==_lsessionOptions .size());
+		&& _detectors_ids.size() == _envs.size()
+		&& _detectors_ids.size() == _lsessionOptions.size());
 	std::list<Yolov5_anpr_onxx_detector*>::iterator it(_detectors.begin());
 	std::list<size_t>::iterator it_id(_detectors_ids.begin());
 	std::list<Ort::SessionOptions*>::iterator it_sessionOptions(_lsessionOptions.begin());
@@ -156,10 +156,10 @@ std::list<size_t> & _detectors_ids) {
 	while (it != _detectors.end() && it_id != _detectors_ids.end()
 		&& it_envs != _envs.end() && it_sessionOptions != _lsessionOptions.end()
 		) {
-		if(*it_id==id) {
-			if(*it_envs !=nullptr) delete * it_envs;
-			if(*it_sessionOptions !=nullptr) delete * it_sessionOptions;
-			if(*it!=nullptr) delete *it;
+		if (*it_id == id) {
+			if (*it_envs != nullptr) delete* it_envs;
+			if (*it_sessionOptions != nullptr) delete* it_sessionOptions;
+			if (*it != nullptr) delete* it;
 			it_envs = _envs.erase(it_envs);
 			it_sessionOptions = _lsessionOptions.erase(it_sessionOptions);
 			it = _detectors.erase(it);
@@ -176,135 +176,78 @@ std::list<size_t> & _detectors_ids) {
 	return false;
 }
 /**
-	@brief displays image in highgui : this is just a test func
-	@param int width : width of source image
-	@param height : height of source image
-	@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	@param *pbData : source image bytes buffer
-	param step Number of bytes each matrix row occupies.The value should include the padding bytes at
-		the end of each row, if any.If the parameter is missing(set to AUTO_STEP), no padding is assumed
-		and the actual step is calculated as cols* elemSize().See Mat::elemSize.
-	@return void
-	@see
-	*/
-	extern "C" 
-	#ifdef _WINDOWS
-__declspec(dllexport)
-#endif //_WINDOWS
-
-void show_image
-(const int width,//width of image
-	const int height,//height of image i.e. the specified dimensions of the image
-	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	void* pbData, size_t step// source image bytes buffer
-)
-{
-	if ((pixOpt != 1) && (pixOpt != 3) && (pixOpt != 4) || height <= 0 || width <= 0 || pbData == nullptr) return;
-	else {
-bool show_image = true;
-			const int time_delay = 4000;
-		if (pixOpt == 1)
-		{
-			cv::Mat destMat(height, width, CV_8UC1, pbData, step);
-			if (show_image && time_delay >= 0) {
-				cv::imshow("SHOW C LIBRARY", destMat);
-			}
-		}
-		if (pixOpt == 3)
-		{
-			cv::Mat destMat(height, width, CV_8UC3,pbData,  step);
-if (show_image && time_delay >= 0) {
-				cv::imshow("SHOW C LIBRARY", destMat);
-			}
-		}
-		if (pixOpt == 4)
-		{
-			cv::Mat destMat(height, width, CV_8UC4, pbData, step);
-if (show_image && time_delay >= 0) {
-				cv::imshow("SHOW C LIBRARY", destMat);
-			}
-		}
-		if (time_delay >= 0) {
-				if (show_image && time_delay == 0) {
-					char c = cv::waitKey(time_delay);
-				}
-				else if (time_delay > 0) {
-					char c = cv::waitKey(time_delay);
-				}
-			}
-			if (show_image && time_delay >= 0) {
-				cv::destroyAllWindows();
-			}
-	}	
-}
-
-/**
 	@brief initializes a new detector by loading its model file and returns its unique id
 	@param model_file : c string model filename (must be allocated by the calling program)
-	@param len : lenght of the model filename
+	@param len : length of the model filename
 	@return the id of the new detector
 	@see
 	*/
-	
-	extern "C" 
-	#ifdef _WINDOWS
+extern "C"
+#ifdef _WINDOWS
 __declspec(dllexport)
 #endif //_WINDOWS
 size_t init_session(size_t len, const char* model_file)
 {
 	assert(detectors_ids.size() == detectors.size());
 	const std::string model_filename(model_file, len);
+	if (!model_filename.size() || !std::filesystem::exists(model_filename)
+		|| !std::filesystem::is_regular_file(model_filename)
+		)
+	{
+		std::cout << "model_filename " << model_filename<<" is not a regular file "<<std::endl;
+		return 0;
+	}
 	//step 2 declare an onnx runtime environment
 	std::string instanceName{ "image-classification-inference" };
 	// https://github.com/microsoft/onnxruntime/blob/rel-1.6.0/include/onnxruntime/core/session/onnxruntime_c_api.h#L123
-	Ort::Env * penv=new Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, instanceName.c_str());
-	envs.push_back(penv);
-	//step 3 declare options for the runtime environment
-	Ort::SessionOptions * psessionOptions=new Ort::SessionOptions();
-	psessionOptions->SetIntraOpNumThreads(1);
-	// Sets graph optimization level
-	// Available levels are
-	// ORT_DISABLE_ALL -> To disable all optimizations
-	// ORT_ENABLE_BASIC -> To enable basic optimizations (Such as redundant node
-	// removals) ORT_ENABLE_EXTENDED -> To enable extended optimizations
-	// (Includes level 1 + more complex optimizations like node fusions)
-	// ORT_ENABLE_ALL -> To Enable All possible optimizations
-	psessionOptions->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-	lsessionOptions.push_back(psessionOptions);
+	Ort::Env* penv = new Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, instanceName.c_str());
+
+	if (penv != nullptr) {
+		//step 3 declare options for the runtime environment
+		Ort::SessionOptions* psessionOptions = new Ort::SessionOptions();
+		if (psessionOptions != nullptr) {
+			psessionOptions->SetIntraOpNumThreads(1);
+			// Sets graph optimization level
+			// Available levels are
+			// ORT_DISABLE_ALL -> To disable all optimizations
+			// ORT_ENABLE_BASIC -> To enable basic optimizations (Such as redundant node
+			// removals) ORT_ENABLE_EXTENDED -> To enable extended optimizations
+			// (Includes level 1 + more complex optimizations like node fusions)
+			// ORT_ENABLE_ALL -> To Enable All possible optimizations
+			psessionOptions->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+			Yolov5_anpr_onxx_detector* onnx_net = nullptr;
 #ifdef _WIN32
-	//step 4 declare an onnx session (ie model), by giving references to the runtime environment, session options and file path to the model
-	std::wstring widestr = std::wstring(model_filename.begin(), model_filename.end());
-	Yolov5_anpr_onxx_detector * onnx_net= new Yolov5_anpr_onxx_detector(*penv, widestr.c_str(), *psessionOptions);
+			//step 4 declare an onnx session (ie model), by giving references to the runtime environment, session options and file path to the model
+			std::wstring widestr = std::wstring(model_filename.begin(), model_filename.end());
+			onnx_net = new Yolov5_anpr_onxx_detector(*penv, widestr.c_str(), *psessionOptions);
 #else
-Yolov5_anpr_onxx_detector * onnx_net= new Yolov5_anpr_onxx_detector(*penv, model_filename.c_str(), *psessionOptions);
+			onnx_net = new Yolov5_anpr_onxx_detector(*penv, model_filename.c_str(), *psessionOptions);
 #endif
-	std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
-	lck.lock();
-	detectors.push_back(onnx_net);
-	size_t id = get_new_id(detectors_ids);
-	detectors_ids.push_back(id);
-	lck.unlock();
-	return id;	
-}
-/**
-	@brief call this func once you have finished with the detector --> to free heap allocated memeory
-	@param id : unique interger to identify the detector to be freed
-	@return true upon success
-	@see
-	*/
-	
-	extern "C" 
-	#ifdef _WINDOWS
-__declspec(dllexport)
-#endif //_WINDOWS
-bool close_session(size_t id)
-{
-	assert(detectors_ids.size() == detectors.size());
-	std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
-	lck.lock();
-	bool session_closed = close_session(id,envs,lsessionOptions, detectors,	detectors_ids);
-	lck.unlock();
-	return session_closed;
+			if (onnx_net != nullptr && penv != nullptr && psessionOptions != nullptr) {
+				std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
+				lck.lock();
+				envs.push_back(penv);
+				lsessionOptions.push_back(psessionOptions);
+				detectors.push_back(onnx_net);
+				size_t id = get_new_id(detectors_ids);
+				detectors_ids.push_back(id);
+				lck.unlock();
+				return id;
+			}
+			else {
+				std::cout << "error while creating onnxruntime session with file : " << model_filename.c_str() << std::endl;
+				return 0;
+			}
+		}
+		else {
+			std::cout << "error while creating SessionOptions" << std::endl;
+			return 0;
+		}
+	}
+	else {
+		std::cout << "error while creating session environment (Ort::Env)" << std::endl;
+		return 0;
+	}
 }
 /**
 	@brief detect lpn in frame
@@ -321,8 +264,8 @@ bool close_session(size_t id)
 	@see
 	*/
 
-	extern "C" 
-	#ifdef _WINDOWS
+extern "C"
+#ifdef _WINDOWS
 __declspec(dllexport)
 #endif //_WINDOWS
 bool detect
@@ -337,7 +280,7 @@ bool detect
 		cv::Mat destMat;
 		if (pixOpt == 1)
 		{
-			destMat=cv::Mat (height, width, CV_8UC1, pbData, step);
+			destMat = cv::Mat(height, width, CV_8UC1, pbData, step);
 		}
 		if (pixOpt == 3)
 		{
@@ -347,7 +290,7 @@ bool detect
 		{
 			destMat = cv::Mat(height, width, CV_8UC4, pbData, step);
 		}
-		std::list<Yolov5_anpr_onxx_detector*>::const_iterator it = get_detector(id, detectors,detectors_ids);
+		std::list<Yolov5_anpr_onxx_detector*>::const_iterator it = get_detector(id, detectors, detectors_ids);
 		std::string lpn_str;
 		std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
 		lck.lock();
@@ -356,9 +299,29 @@ bool detect
 		std::string::const_iterator it_lpn(lpn_str.begin());
 		int i = 0;
 		while (it_lpn != lpn_str.end() && i < lpn_len) {
-			lpn[i]=*it_lpn;
+			lpn[i] = *it_lpn;
 			i++; it_lpn++;
 		}
-		return (lpn_str.length()>0);
+		return (lpn_str.length() > 0);
 	}
+}
+
+/**
+	@brief call this func once you have finished with the detector --> to free heap allocated memeory
+	@param id : unique interger to identify the detector to be freed
+	@return true upon success
+	@see
+	*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+bool close_session(size_t id)
+{
+	assert(detectors_ids.size() == detectors.size());
+	std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
+	lck.lock();
+	bool session_closed = close_session(id, envs, lsessionOptions, detectors, detectors_ids);
+	lck.unlock();
+	return session_closed;
 }
