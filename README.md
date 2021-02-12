@@ -105,12 +105,12 @@ Building will produce an executable, with command line options (see them in the 
 Note that the binary release, sample_cpp, is available in the repo :
 <a name="Install dir on windows">
 - on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release 
-
-<a name="Install dir on linux">
+<a name="Install_dir_on_linux">
 - on Linux sample_cpp LPReditor_ANPR_Lib/sample_cpp
+
 As said, to run the binary, you have to :
 - install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install dir on windows)
-- copy also the onnxruntime library in the [installation dir](#Install dir on linux)
+- copy also the onnxruntime library in the [installation dir](#Install_dir_on_linux)
 <a name="Command line syntax">
 ## Command line syntax
 Below is the syntax : 
