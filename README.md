@@ -1,5 +1,5 @@
 # LPReditor_ANPR_Lib
-A C library that performs automatic number recognition
+C library that performs automatic license plate recognition
 
 
   
