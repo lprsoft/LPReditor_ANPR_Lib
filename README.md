@@ -185,30 +185,6 @@ Mandatory : to operate, the executable must load the model file. You can downloa
 
  
 
----
-&nbsp;
-Optionaly (in the command line), it can display a window, named with the read lpn :
- 	
-
- 
-
----
-&nbsp;
-![highgui](https://github.com/lprsoft/lpreditor/blob/master/image2.jpg).
-&nbsp;
- 	
-
- 
-
----
-Another option is to display bounding boxes of caracters and license plate ROI (by activating show_boxes function, directly in the code) :
-&nbsp;
- 	
-
- 
-
----
-(<img src="https://github.com/lprsoft/lpreditor/blob/master/image.jpg" width="640" height="480" />) 
 
 # Third party software
 
