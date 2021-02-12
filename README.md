@@ -28,28 +28,28 @@ A C library that performs automatic number recognition
     + [![YOLOv5](https://github.com/ultralytics/yolov5)](#--yolov5--https---githubcom-ultralytics-yolov5-)
     + [![ONNX](https://github.com/onnx/onnx)](#--onnx--https---githubcom-onnx-onnx-)
 - [License](#license)
-
+# C API
 This C library is a C API, that allows to recognize license plate numbers in images. It is designed to use without pain, since the number of exported functions is strictly limited (only 3 functions). It exposes no structs (and of course no C++ classes). No need of any tuning also. It is ready to operate, on any latin license plate number image. Furthermore, it relies on standard technologies, that make it possible, to (build and) deploy on many platforms. Lastly, the library supports multithreading.
-# Building the API
+## Building the API
 The code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has not (yet) been tested (only CPU). 
-### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)
-## On Windows :
-### Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)
+#### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)
+### On Windows :
+#### Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)
 Download onnxruntime-win-x64-1.4.0.zip and decompress somewhere
-### Step 3 : modify CMakeLists.txt
+#### Step 3 : modify CMakeLists.txt
 In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-win-x64-1.4.0/ to point to the actual path of the onnxruntime-win-x64-1.4.0 directory
-### Step 4 : cmake
+#### Step 4 : cmake
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
-### Step 4 : build solution in Visual Studio
+#### Step 5 : build solution in Visual Studio
 
-## On Linux :
-### Step 2 : ![onnxruntime-linux-x64-1.6.0](https://github.com/microsoft/onnxruntime/releases)
+### On Linux :
+#### Step 2 : ![onnxruntime-linux-x64-1.6.0](https://github.com/microsoft/onnxruntime/releases)
 Download onnxruntime-linux-x64-1.6.0.tgz and decompress somewhere
-### Step 3 : modify CMakeLists.txt
+#### Step 3 : modify CMakeLists.txt
 In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-linux-x64-1.6.0/ to point to the actual path of the onnxruntime-linux-x64-1.6.0 directory
-### Step 4 : cmake
+#### Step 4 : cmake
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
-### Step 4 : make in the build LPReditor_ANPR/build dir
+#### Step 5 : make in the build LPReditor_ANPR/build dir
 # Calling the API in your code
 The use of the library is pretty straighforward and decomposes in three distinct steps. At first, engine initialization, via calling the function *init_session*. It initializes a new detector, by loading its model file and returns a (unique) id. 
 This id must be passed, as a parameter, to the two others functions. Second, call the *detect* function, to recognize license plates in images. Parameters of the *detect* function are :
@@ -92,6 +92,13 @@ The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://git
 ## Building sample_cpp
 The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file), to configure and generate the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
 
+Building will produce an executable, with command line options (see them in the Open_LPReditor.cpp). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
+
+---
+&nbsp;
+![highgui](https://github.com/lprsoft/LPReditor_ANPR_Lib/data/screenshot.jpg).
+&nbsp;
+
 ## Binary release
 Note that the binary release sample_cpp is available in the repo :
 <a name="Install dir on windows">
@@ -103,12 +110,6 @@ As said, to run the binary, you have to :
 - install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install dir on windows)
 - copy also the onnxruntime library in the [installation dir](#Install dir on linux)
 
-Building will produce an executable, with command line options (see them in the Open_LPReditor.cpp). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
-
----
-&nbsp;
-![highgui](https://github.com/lprsoft/LPReditor_ANPR_Lib/blob/master/screenshot.jpg).
-&nbsp;
 ## Command line syntax
 Below is the syntax : 
 sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
