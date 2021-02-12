@@ -93,29 +93,32 @@ The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://git
 The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file), to configure and generate the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
 
 ## Binary release
-Note that you the binary release sample_cpp :
+Note that the binary release sample_cpp is available in the repo :
+<a name="Install dir on windows">
 - on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release 
-<a name="step_4">
- [step 4](#step_4)
 
+<a name="Install dir on linux">
 - on Linux sample_cpp LPReditor_ANPR_Lib/sample_cpp
 As said, to run the binary, you have to :
-- install OpenCV (and, on windows, to copy the opencv*.dlls in installation dir)
-- copy also the onnxruntime library in the installation dir
+- install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install dir on windows)
+- copy also the onnxruntime library in the [installation dir](#Install dir on linux)
 
+Building will produce an executable, with command line options (see them in the Open_LPReditor.cpp). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
+
+---
+&nbsp;
+![highgui](https://github.com/lprsoft/lpreditor/blob/master/screenshot.jpg).
+&nbsp;
 ## Command line syntax
-	sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
-	Example
-  sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test
+Below is the syntax : 
+sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
+Example :
+sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test
 
 
 # Deep learning model file
 Mandatory : to operate, the executable must load the model file. You can download the model : due to its size, the lpreditor_anpr.onnx file in the repo, as a zipped file (/data/models/lpreditor_anpr.zip). Another option, is to train your own model, on your dataset, using ![YOLOv5](https://github.com/ultralytics/yolov5) and then ![export](https://github.com/ultralytics/yolov5/issues/251) it.
 
-
-# More detailed description
-Building will produce an executable, with command line options (see them in the Open_LPReditor.cpp). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
- 	
 
  
 
