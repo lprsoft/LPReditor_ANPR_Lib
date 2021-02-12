@@ -29,9 +29,9 @@ C library that performs automatic number recognition
     + [![ONNX](https://github.com/onnx/onnx)](#--onnx--https---githubcom-onnx-onnx-)
 - [License](#license)
 
-This C library is a C API, that allows to recognize license plate numbers in images. It is meant to use without pain, since the number of exported functions is limited (only 3 functions). It uses no structs (and of course no C++ classes). No need of tuning also. It is ready to operate on any latin license plate number image. Furthermore it relies on standard technologies, that make it possible, to (build and) deploy on many platforms.
+This C library is a C API, that allows to recognize license plate numbers in images. It is meant to use without pain, since the number of exported functions is limited (only 3 functions). It exposes no structs (and of course no C++ classes). No need of tuning also. It is ready to operate, on any latin license plate number image. Furthermore It relies on standard technologies, that make it possible, to (build and) deploy on many platforms.
 # Building the API
-This code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has not (yet) been tested (only CPU). 
+The code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has not (yet) been tested (only CPU). 
 ### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)
 ## On Windows :
 ### Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)
