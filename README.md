@@ -61,20 +61,34 @@ This id must be passed, as a parameter, to the two others functions. Second you 
 
 Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_session*). 
 ```javascript
-//step 1 declare a global instance of ONNX Runtime api
-const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+
+		//step 1 : initializes a new detector, by loading its model file and returnsa unique id
+		//file path of the model
+		//the model file is in the repo under /data/models/lpreditor_anpr.zip, due to its size (Github limits file size). It must be dezipped to lpreditor_anpr.onnx,         //after cloning the repo.
+		std::string model_filename = "The/path/to/the/model/that/is/in/repo/lpreditor_anpr.onnx";
+		size_t len = model_filename.size();
+		size_t id = init_session(len, model_filename.c_str());
+		
+    
+```
+```javascript//step 2 : detect lpn in frame    
+		//allocates a c string to store the read lpn
+		const size_t lpn_len = 15;
+		char lpn[lpn_len] = "\0";
+		bool detected = detect
+		(frame.cols,//width of image
+			frame.rows,//height of image i.e. the specified dimensions of the image
+			frame.channels(),// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+			frame.data, step// source image bytes buffer
+			, id,//id : unique interger to identify the detector to be used
+			lpn_len, lpn//lpn : a c string allocated by the calling program
+		);
+		std::cout << lpn;
 ```
 ```javascript
-//step2 declare an onnx runtime environment
-std::string instanceName{ "image-classification-inference" };
-// https://github.com/microsoft/onnxruntime/blob/rel-1.6.0/include/onnxruntime/core/session/onnxruntime_c_api.h#L123
-Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,instanceName.c_str());
-```
-```javascript
-//step 3 declare options for the runtime environment
-Ort::SessionOptions sessionOptions;
-sessionOptions.SetIntraOpNumThreads(1);
-sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+		//step 3: call this func once you have finished with the detector-- > to free memeory
+		bool session_closed = close_session(id//id : unique interger to identify the detector to be freed
+		);
 ```
 <a name="step_4">
  
