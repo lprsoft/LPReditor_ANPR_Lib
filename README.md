@@ -73,6 +73,7 @@ size_t id = init_session(len, model_filename.c_str());
 //allocates a c string to store the read lpn
 const size_t lpn_len = 15;
 char lpn[lpn_len] = "\0";
+//the code below, comes from sample_cpp (in repo) and frame is cv::Mat image instance.
 bool detected = detect
 (frame.cols,//width of image
 frame.rows,//height of image i.e. the specified dimensions of the image
