@@ -67,7 +67,8 @@ std::string model_filename = "The/path/to/the/model/that/is/in/repo/lpreditor_an
 size_t len = model_filename.size();
 size_t id = init_session(len, model_filename.c_str());
 ```
-```javascript//step 2 : detect lpn in frame    
+```javascript
+//step 2 : detect lpn in frame    
 //allocates a c string to store the read lpn
 const size_t lpn_len = 15;
 char lpn[lpn_len] = "\0";
@@ -176,10 +177,16 @@ As said, to run the binary, you have to :
 	
 ## Command line syntax
 Below is the syntax : 
-sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
-Example :
-sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test
 
+```javascript
+
+sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
+```
+Example :
+
+```javascript
+sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test
+```
 
 # Deep learning model file
 Mandatory : to operate, the executable must load the model file. You can download the model : due to its size, the lpreditor_anpr.onnx file in the repo, as a zipped file (/data/models/lpreditor_anpr.zip). Another option, is to train your own model, on your dataset, using ![YOLOv5](https://github.com/ultralytics/yolov5) and then ![export](https://github.com/ultralytics/yolov5/issues/251) it.
