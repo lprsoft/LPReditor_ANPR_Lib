@@ -88,13 +88,103 @@ bool session_closed = close_session(id//id : unique interger to identify the det
 );
 ```
 ## API Documentation
+```javascript
+/**
+	@brief initializes a new detector by loading its model file and returns its unique id
+	@param model_file : c string model filename (must be allocated by the calling program)
+	@param len : lenght of the model filename
+	@return the id of the new detector
+	@see
+	*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+size_t init_session(size_t len, const char* model_file)
 
+```
+
+/**
+	@brief call this func once you have finished with the detector --> to free heap allocated memeory
+	@param id : unique interger to identify the detector to be freed
+	@return true upon success
+	@see
+	*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+bool close_session(size_t id)
+{
+	assert(detectors_ids.size() == detectors.size());
+	std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
+	lck.lock();
+	bool session_closed = close_session(id, envs, lsessionOptions, detectors, detectors_ids);
+	lck.unlock();
+	return session_closed;
+}
+/**
+	@brief detect lpn in frame
+	@param int width : width of source image
+	@param height : height of source image
+	@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+	@param *pbData : source image bytes buffer
+	param step Number of bytes each matrix row occupies.The value should include the padding bytes at
+		the end of each row, if any.If the parameter is missing(set to AUTO_STEP), no padding is assumed
+		and the actual step is calculated as cols* elemSize().See Mat::elemSize.
+		@param id : unique interger to identify the detector to be used
+@param ilpn: a c string allocated by the calling program
+	@return true upon success
+	@see
+	*/
+
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+bool detect
+(const int width,//width of image
+	const int height,//height of image i.e. the specified dimensions of the image
+	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+	void* pbData, size_t step// source image bytes buffer
+	, size_t id, size_t lpn_len, char* lpn)
+{
+	if ((pixOpt != 1) && (pixOpt != 3) && (pixOpt != 4) || height <= 0 || width <= 0 || pbData == nullptr) return false;
+	else {
+		cv::Mat destMat;
+		if (pixOpt == 1)
+		{
+			destMat = cv::Mat(height, width, CV_8UC1, pbData, step);
+		}
+		if (pixOpt == 3)
+		{
+			destMat = cv::Mat(height, width, CV_8UC3, pbData, step);
+		}
+		if (pixOpt == 4)
+		{
+			destMat = cv::Mat(height, width, CV_8UC4, pbData, step);
+		}
+		std::list<Yolov5_anpr_onxx_detector*>::const_iterator it = get_detector(id, detectors, detectors_ids);
+		std::string lpn_str;
+		std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
+		lck.lock();
+		(*it)->detect(destMat, lpn_str);
+		lck.unlock();
+		std::string::const_iterator it_lpn(lpn_str.begin());
+		int i = 0;
+		while (it_lpn != lpn_str.end() && i < lpn_len) {
+			lpn[i] = *it_lpn;
+			i++; it_lpn++;
+		}
+		return (lpn_str.length() > 0);
+	}
+}
 # sample_cpp
 The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://github.com/opencv/opencv) to load images, so you first need to install it.
 ## Building sample_cpp
 The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file), to configure and generate the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
 
-Building will produce an executable, with command line options (see them in the sample_cpp.cpp file or [below](#Command line syntax)). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
+Building will produce an executable, with command line options (see them in the sample_cpp.cpp file or [below](#Command_line_syntax)). It can read lpn(s) from a single image file or alternatively, from multiple image files, in a common directory. If the actual license plate number is provided (see func getTrueLPN in the code), in the image filename, then statistics of the correctness of the readings, are available. 
 
 ---
 &nbsp;
@@ -103,15 +193,15 @@ Building will produce an executable, with command line options (see them in the 
 
 ## Binary release
 Note that the binary release, sample_cpp, is available in the repo :
-<a name="Install dir on windows">
+<a name="Install_dir_on_windows">
 - on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release 
 <a name="Install_dir_on_linux">
 - on Linux sample_cpp LPReditor_ANPR_Lib/sample_cpp
 
 As said, to run the binary, you have to :
-- install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install dir on windows)
+- install OpenCV (and, on windows, to copy the opencv*.dlls in [installation dir](#Install_dir_on_windows)
 - copy also the onnxruntime library in the [installation dir](#Install_dir_on_linux)
-<a name="Command line syntax">
+<a name="Command_line_syntax">
 ## Command line syntax
 Below is the syntax : 
 sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
@@ -152,7 +242,7 @@ Another option is to display bounding boxes of caracters and license plate ROI (
 
 # Third party software
 
-## c++ inference (present code)
+## API (present code)
 
 ### ![OpenCV](https://github.com/opencv/opencv)
 Copyright © 2021 , OpenCV team
