@@ -107,7 +107,7 @@ Building will produce an executable, with command line options (see them in the 
 
 ---
 &nbsp;
-![highgui](https://github.com/lprsoft/lpreditor/blob/master/screenshot.jpg).
+![highgui](https://github.com/lprsoft/LPReditor_ANPR_Lib/blob/master/screenshot.jpg).
 &nbsp;
 ## Command line syntax
 Below is the syntax : 
