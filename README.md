@@ -62,7 +62,7 @@ This id must be passed, as a parameter, to the two others functions. Second you 
 Third, when you are finished with reading images, you must call the *close_session* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_session*). 
 ```javascript
 
-//step 1 : initializes a new detector, by loading its model file and returnsa unique id
+//step 1 : initializes a new detector, by loading its model file. In return, you get a unique id.
 //file path of the model
 //the model file is in the repo under /data/models/lpreditor_anpr.zip, due to its size (Github limits file size). It must be dezipped to lpreditor_anpr.onnx,       after cloning the repo.
 std::string model_filename = "The/path/to/the/model/that/is/in/repo/lpreditor_anpr.onnx";
@@ -90,7 +90,7 @@ bool session_closed = close_session(id//id : unique interger to identify the det
 );
 ```
 # sample_cpp
-The repo comes with a example sample_cpp. It uses OpenCV to load images, so you first need to install it.
+The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://github.com/opencv/opencv) to load images, so you first need to install it.
 ## Building sample_cpp
 The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file) to configure and generates the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
 
@@ -147,7 +147,7 @@ Another option is to display bounding boxes of caracters and license plate ROI (
 
 ## c++ inference (present code)
 
-### ![OpenCV 4.5.0 and higher](https://github.com/opencv/opencv)
+### ![OpenCV](https://github.com/opencv/opencv)
 Copyright © 2021 , OpenCV team
 Apache 2 License
 
