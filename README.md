@@ -89,21 +89,27 @@ std::cout << lpn;
 bool session_closed = close_session(id//id : unique interger to identify the detector to be freed
 );
 ```
-<a name="step_4">
- 
-```javascript
-//step 4 declare an onnx session (ie model), by giving references to the runtime environment, session options and path to the model
-std::wstring widestr = std::wstring(model_filename.begin(), model_filename.end());
-Yolov5_anpr_onxx_detector onnx_net(env, widestr.c_str(), sessionOptions);
-```
-```javascript
-//step 5 call the detect function of the Yolov5_anpr_onxx_detector object, on a cv::mat frame.
-//This will retieves the lpn string
-std::string lpn;
-onnx_net.detect(frame, lpn);
-```
+# sample_cpp
+The repo comes with a example sample_cpp. It uses OpenCV to load images, so you first need to install it.
+## Building sample_cpp
+The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file) to configure and generates the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
+
+## Binary release
+Note that you the binary release sample_cpp :
+- on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release
+- on Linux sample_cpp LPReditor_ANPR_Lib/sample_cpp
+As said, to run the binary, you have to :
+- install OpenCV (and, on windows, to copy the opencv*.dlls in installation dir)
+- copy also the onnxruntime library in the installation dir
+
+## Command line syntax
+	sample_cpp -model path/to/lpreditor_anpr.onnx [-image path/to/your/image/file][-dir path/to/your/image/dir]" << std::endl;
+	Example
+  sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images/images test/0000000001_3065WWA34.jpg -dir ../../data/images/images test
+
+
 # Deep learning model file
-Mandatory : to operate, the executable must load the model file. Doing that, you have to specify, either in the command line or directly in the source code (see [step 4](#step_4)) its file path. You can download the model : due to its size, the lpreditor_anpr.onnx file is in the LPReditor_ANPR.zip release, under (LPReditor_ANPR/data/models/) or in the repo as a zipped file (/data/models/lpreditor_anpr.zip). Another option, is to train your own model, on your dataset, using ![YOLOv5](https://github.com/ultralytics/yolov5) and then ![export](https://github.com/ultralytics/yolov5/issues/251) it.
+Mandatory : to operate, the executable must load the model file. You can download the model : due to its size, the lpreditor_anpr.onnx file in the repo, as a zipped file (/data/models/lpreditor_anpr.zip). Another option, is to train your own model, on your dataset, using ![YOLOv5](https://github.com/ultralytics/yolov5) and then ![export](https://github.com/ultralytics/yolov5/issues/251) it.
 
 
 # More detailed description
