@@ -1,10 +1,6 @@
 # LPReditor_ANPR_Lib
 C library that performs automatic license plate recognition
 
-
-  
-*Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on latin characters.*
-
 - [Build](#build)
     + [(Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)](#-common--step-1---install---opencv--https---githubcom-opencv-opencv-)
   * [On Windows :](#on-windows--)
@@ -28,6 +24,11 @@ C library that performs automatic license plate recognition
     + [![YOLOv5](https://github.com/ultralytics/yolov5)](#--yolov5--https---githubcom-ultralytics-yolov5-)
     + [![ONNX](https://github.com/onnx/onnx)](#--onnx--https---githubcom-onnx-onnx-)
 - [License](#license)
+
+
+  
+*Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on latin characters.*
+
 # C API
 This C library is a C API, that allows to recognize license plate numbers in images. It is designed to use without pain, since the number of exported functions is strictly limited (only 3 functions). It exposes no structs (and of course no C++ classes). No need of any tuning also. It is ready to operate, on any latin license plate number image. Furthermore, it relies on standard technologies, that make it possible, to (build and) deploy on many platforms. Lastly, the library supports multithreading.
 ## Building the API
