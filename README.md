@@ -29,8 +29,8 @@ C library that performs automatic number recognition
     + [![ONNX](https://github.com/onnx/onnx)](#--onnx--https---githubcom-onnx-onnx-)
 - [License](#license)
 
-This C library is a C API, that allows to recognize license plate numbers in images. It is meant to use without pain, since the number of exported functions is limited (only 3 functions). It uses no structs (and of course no C++ classes). No need of tuning also. It is ready to operate on any latin license plate number image. Furthermore it relies on standard technologies, that make it possible to deploy on many platforms.
-# Build
+This C library is a C API, that allows to recognize license plate numbers in images. It is meant to use without pain, since the number of exported functions is limited (only 3 functions). It uses no structs (and of course no C++ classes). No need of tuning also. It is ready to operate on any latin license plate number image. Furthermore it relies on standard technologies, that make it possible, to (build and) deploy on many platforms.
+# Building the API
 This code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has not (yet) been tested (only CPU). 
 ### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)
 ## On Windows :
@@ -51,8 +51,14 @@ In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-linux-x64-1.6.0/ to poin
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
 ### Step 4 : make in the build LPReditor_ANPR/build dir
 
-# Integrating to your c++ code
-
+# Calling the API in your code
+The use of the library is pretty straighforward and decomposes in three distinct steps :
+At first, engine initialization via the function init_session. It initializes a new detector, by loading its model file and it returns a (unique) id. 
+This id must be passed as a parameter, to the two others functions. Second you call the detect function to recognize the license plates in images. The parameters of the detect function are :
+- the id returned by init_session.
+- 4 parameters, to access the image that has been previously allocated in memory.
+- a pointer to a preallocated c string (to return the license plate number)
+Third, when you are finished with reading images you must call the close_session to free the memory used by the detector
 ```javascript
 //step 1 declare a global instance of ONNX Runtime api
 const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
