@@ -88,11 +88,12 @@ bool session_closed = close_session(id//id : unique interger to identify the det
 );
 ```
 ## API Documentation
+### *init_session*
 ```javascript
 /**
-	@brief initializes a new detector by loading its model file and returns its unique id
-	@param model_file : c string model filename (must be allocated by the calling program)
-	@param len : lenght of the model filename
+	@brief initializes a new detector, by loading its model file and returns its unique id
+	@param model_file : c string model filename 
+	@param len : length of the model filename
 	@return the id of the new detector
 	@see
 	*/
@@ -104,6 +105,37 @@ size_t init_session(size_t len, const char* model_file)
 
 ```
 
+### *detect*
+```javascript
+/**
+	@brief detect lpn in frame
+	@param int width : width of source image
+	@param height : height of source image
+	@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+	@param *pbData : source image bytes buffer
+	param step Number of bytes each matrix row occupies.The value should include the padding bytes at
+	the end of each row, if any.If the parameter is missing(set to AUTO_STEP), no padding is assumed
+	and the actual step is calculated as cols* elemSize().See Mat::elemSize.
+	param id : unique interger to identify the detector to be used
+	@param lpn: a c string allocated by the calling program
+	@return true upon success
+	*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+bool detect
+(const int width,//width of image
+	const int height,//height of image i.e. the specified dimensions of the image
+	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+	void* pbData, size_t step// source image bytes buffer
+	, size_t id, size_t lpn_len, char* lpn)
+	
+```
+
+
+### *close_session*
+```javascript
 /**
 	@brief call this func once you have finished with the detector --> to free heap allocated memeory
 	@param id : unique interger to identify the detector to be freed
@@ -115,70 +147,8 @@ extern "C"
 __declspec(dllexport)
 #endif //_WINDOWS
 bool close_session(size_t id)
-{
-	assert(detectors_ids.size() == detectors.size());
-	std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
-	lck.lock();
-	bool session_closed = close_session(id, envs, lsessionOptions, detectors, detectors_ids);
-	lck.unlock();
-	return session_closed;
-}
-/**
-	@brief detect lpn in frame
-	@param int width : width of source image
-	@param height : height of source image
-	@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	@param *pbData : source image bytes buffer
-	param step Number of bytes each matrix row occupies.The value should include the padding bytes at
-		the end of each row, if any.If the parameter is missing(set to AUTO_STEP), no padding is assumed
-		and the actual step is calculated as cols* elemSize().See Mat::elemSize.
-		@param id : unique interger to identify the detector to be used
-@param ilpn: a c string allocated by the calling program
-	@return true upon success
-	@see
-	*/
 
-extern "C"
-#ifdef _WINDOWS
-__declspec(dllexport)
-#endif //_WINDOWS
-bool detect
-(const int width,//width of image
-	const int height,//height of image i.e. the specified dimensions of the image
-	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	void* pbData, size_t step// source image bytes buffer
-	, size_t id, size_t lpn_len, char* lpn)
-{
-	if ((pixOpt != 1) && (pixOpt != 3) && (pixOpt != 4) || height <= 0 || width <= 0 || pbData == nullptr) return false;
-	else {
-		cv::Mat destMat;
-		if (pixOpt == 1)
-		{
-			destMat = cv::Mat(height, width, CV_8UC1, pbData, step);
-		}
-		if (pixOpt == 3)
-		{
-			destMat = cv::Mat(height, width, CV_8UC3, pbData, step);
-		}
-		if (pixOpt == 4)
-		{
-			destMat = cv::Mat(height, width, CV_8UC4, pbData, step);
-		}
-		std::list<Yolov5_anpr_onxx_detector*>::const_iterator it = get_detector(id, detectors, detectors_ids);
-		std::string lpn_str;
-		std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
-		lck.lock();
-		(*it)->detect(destMat, lpn_str);
-		lck.unlock();
-		std::string::const_iterator it_lpn(lpn_str.begin());
-		int i = 0;
-		while (it_lpn != lpn_str.end() && i < lpn_len) {
-			lpn[i] = *it_lpn;
-			i++; it_lpn++;
-		}
-		return (lpn_str.length() > 0);
-	}
-}
+```
 # sample_cpp
 The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://github.com/opencv/opencv) to load images, so you first need to install it.
 ## Building sample_cpp
