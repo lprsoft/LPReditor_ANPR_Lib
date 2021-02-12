@@ -50,7 +50,6 @@ In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-linux-x64-1.6.0/ to poin
 ### Step 4 : cmake
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
 ### Step 4 : make in the build LPReditor_ANPR/build dir
-
 # Calling the API in your code
 The use of the library is pretty straighforward and decomposes in three distinct steps. At first, engine initialization, via calling the function *init_session*. It initializes a new detector, by loading its model file and returns a (unique) id. 
 This id must be passed, as a parameter, to the two others functions. Second, call the *detect* function, to recognize license plates in images. Parameters of the *detect* function are :
@@ -91,11 +90,14 @@ bool session_closed = close_session(id//id : unique interger to identify the det
 # sample_cpp
 The repo comes with a example, called sample_cpp. It needs ![OpenCV](https://github.com/opencv/opencv) to load images, so you first need to install it.
 ## Building sample_cpp
-The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file) to configure and generates the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
+The easiest way is to use cmake (since sample_cpp comes with CMakeLists.txt file), to configure and generate the solution. This way, you make sure that the projrct links to the LPReditor_ANPR_Lib library (on windows files LPReditor_ANPR_Lib.lib + LPReditor_ANPR_Lib.dll or, on linux, file libLPReditor_ANPR_Lib.so). 
 
 ## Binary release
 Note that you the binary release sample_cpp :
-- on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release
+- on windows sample_cpp.exe under LPReditor_ANPR_Lib/build/Debug or LPReditor_ANPR_Lib/build/Release 
+<a name="step_4">
+ [step 4](#step_4)
+
 - on Linux sample_cpp LPReditor_ANPR_Lib/sample_cpp
 As said, to run the binary, you have to :
 - install OpenCV (and, on windows, to copy the opencv*.dlls in installation dir)
