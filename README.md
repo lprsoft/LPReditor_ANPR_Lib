@@ -198,39 +198,6 @@ sample_cpp -model ../../data/models/lpreditor_anpr.onnx -image ../../data/images
 # Deep learning model file
 Mandatory : to operate, the executable must load the model file. You can download the model : due to its size, the lpreditor_anpr.onnx file in the repo, as a zipped file (/data/models/lpreditor_anpr.zip). Another option, is to train your own model, on your dataset, using ![YOLOv5](https://github.com/ultralytics/yolov5) and then ![export](https://github.com/ultralytics/yolov5/issues/251) it.
 
-- [C API](#c-api)
-  * [Building the API](#building-the-api)
-      - [(Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)](#-common--step-1---install---opencv--https---githubcom-opencv-opencv-)
-    + [On Windows :](#on-windows--)
-      - [Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)](#step-2-----onnxruntime-win-x64-140--https---githubcom-microsoft-onnxruntime-releases-)
-      - [Step 3 : modify CMakeLists.txt](#step-3---modify-cmakeliststxt)
-      - [Step 4 : cmake](#step-4---cmake)
-      - [Step 5 : build solution in Visual Studio](#step-5---build-solution-in-visual-studio)
-    + [On Linux :](#on-linux--)
-      - [Step 2 : ![onnxruntime-linux-x64-1.6.0](https://github.com/microsoft/onnxruntime/releases)](#step-2-----onnxruntime-linux-x64-160--https---githubcom-microsoft-onnxruntime-releases-)
-      - [Step 3 : modify CMakeLists.txt](#step-3---modify-cmakeliststxt-1)
-      - [Step 4 : cmake](#step-4---cmake-1)
-      - [Step 5 : make in the build LPReditor_ANPR/build dir](#step-5---make-in-the-build-lpreditor-anpr-build-dir)
-  * [Calling the API in your code](#calling-the-api-in-your-code)
-  * [API Documentation](#api-documentation)
-    + [*init_session*](#-init-session-)
-    + [*detect*](#-detect-)
-    + [*close_session*](#-close-session-)
-- [sample_cpp](#sample-cpp)
-  * [Building sample_cpp](#building-sample-cpp)
-  * [Binary release](#binary-release)
-  * [Command line syntax](#command-line-syntax)
-- [Deep learning model file](#deep-learning-model-file)
-- [Third party software](#third-party-software)
-  * [API (present code)](#api--present-code-)
-    + [![OpenCV](https://github.com/opencv/opencv)](#--opencv--https---githubcom-opencv-opencv-)
-    + [![ONNXRuntime](https://github.com/microsoft/onnxruntime)](#--onnxruntime--https---githubcom-microsoft-onnxruntime-)
-  * [model trained with the use of :](#model-trained-with-the-use-of--)
-    + [![YOLOv5](https://github.com/ultralytics/yolov5)](#--yolov5--https---githubcom-ultralytics-yolov5-)
-    + [![ONNX](https://github.com/onnx/onnx)](#--onnx--https---githubcom-onnx-onnx-)
-- [License](#license)
-
- 
 
 
 # Third party software
