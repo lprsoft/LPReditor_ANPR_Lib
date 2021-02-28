@@ -215,29 +215,51 @@ size_t init_session(size_t len, const char* model_file)
 			// (Includes level 1 + more complex optimizations like node fusions)
 			// ORT_ENABLE_ALL -> To Enable All possible optimizations
 			psessionOptions->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-			Yolov5_anpr_onxx_detector* onnx_net = nullptr;
+
+
+
+
+#ifdef LPR_EDITOR_USE_CUDA
+			// Optionally add more execution providers via session_options
+			// E.g. for CUDA include cuda_provider_factory.h and uncomment the following line:
+			// nullptr for Status* indicates success
+			OrtStatus* status=OrtSessionOptionsAppendExecutionProvider_CUDA(*psessionOptions, 0);
+			if (status == nullptr) {
+
+#endif //LPR_EDITOR_USE_CUDA
+				Yolov5_anpr_onxx_detector* onnx_net = nullptr;
 #ifdef _WIN32
-			//step 4 declare an onnx session (ie model), by giving references to the runtime environment, session options and file path to the model
-			std::wstring widestr = std::wstring(model_filename.begin(), model_filename.end());
-			onnx_net = new Yolov5_anpr_onxx_detector(*penv, widestr.c_str(), *psessionOptions);
+				//step 4 declare an onnx session (ie model), by giving references to the runtime environment, session options and file path to the model
+				std::wstring widestr = std::wstring(model_filename.begin(), model_filename.end());
+				onnx_net = new Yolov5_anpr_onxx_detector(*penv, widestr.c_str(), *psessionOptions);
 #else
-			onnx_net = new Yolov5_anpr_onxx_detector(*penv, model_filename.c_str(), *psessionOptions);
+				onnx_net = new Yolov5_anpr_onxx_detector(*penv, model_filename.c_str(), *psessionOptions);
 #endif
-			if (onnx_net != nullptr && penv != nullptr && psessionOptions != nullptr) {
-				std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
-				lck.lock();
-				envs.push_back(penv);
-				lsessionOptions.push_back(psessionOptions);
-				detectors.push_back(onnx_net);
-				size_t id = get_new_id(detectors_ids);
-				detectors_ids.push_back(id);
-				lck.unlock();
-				return id;
-			}
+				if (onnx_net != nullptr && penv != nullptr && psessionOptions != nullptr) {
+					std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
+					lck.lock();
+					envs.push_back(penv);
+					lsessionOptions.push_back(psessionOptions);
+					detectors.push_back(onnx_net);
+					size_t id = get_new_id(detectors_ids);
+					detectors_ids.push_back(id);
+					lck.unlock();
+					return id;
+				}
+				else {
+					std::cout << "error while creating onnxruntime session with file : " << model_filename.c_str() << std::endl;
+					return 0;
+				}
+
+#ifdef LPR_EDITOR_USE_CUDA
+	}
 			else {
-				std::cout << "error while creating onnxruntime session with file : " << model_filename.c_str() << std::endl;
-				return 0;
-			}
+				CheckStatus(status);
+					std::cout << "cuda error "<< std::endl;
+					return 0;
+				}
+#endif //LPR_EDITOR_USE_CUDA
+		
 		}
 		else {
 			std::cout << "error while creating SessionOptions" << std::endl;
@@ -294,7 +316,10 @@ bool detect
 		std::string lpn_str;
 		std::unique_lock<std::mutex> lck(mtx, std::defer_lock);
 		lck.lock();
-		(*it)->detect(destMat, lpn_str);
+		//for normal plates
+		(*it)->evaluate_lpn_with_lpn_detection(destMat, lpn_str);
+		//for small plates
+		//(*it)->detect(destMat, lpn_str);
 		lck.unlock();
 		std::string::const_iterator it_lpn(lpn_str.begin());
 		int i = 0;
@@ -307,7 +332,7 @@ bool detect
 }
 
 /**
-	@brief call this func once you have finished with the detector --> to free heap allocated memeory
+	@brief call this func once you have finished with the detector --> to free heap allocated memory
 	@param id : unique interger to identify the detector to be freed
 	@return true upon success
 	@see
