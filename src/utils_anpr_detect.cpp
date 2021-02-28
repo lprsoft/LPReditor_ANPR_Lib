@@ -423,7 +423,7 @@ void filtre_grubbs_sides(const std::list<cv::Rect>& boxes, std::list<float>& ang
 		standard_deviation_produit_interdistance_avec_angle = (somme_carre_produit_interdistance_avec_angle)*interdistances.size();
 		standard_deviation_produit_interdistance_avec_angle -= (somme_produit_interdistance_avec_angle * somme_produit_interdistance_avec_angle);
 #ifdef _DEBUG
-		assert(standard_deviation_produit_interdistance_avec_angle > -FLT_EPSILON);
+		//assert(standard_deviation_produit_interdistance_avec_angle > -FLT_EPSILON);
 #endif //_DEBUG
 		standard_deviation_produit_interdistance_avec_angle /= (interdistances.size() * interdistances.size());
 		standard_deviation_produit_interdistance_avec_angle = sqrtf(standard_deviation_produit_interdistance_avec_angle);
@@ -1033,3 +1033,34 @@ std::vector<std::vector<Detection>> PostProcessing(
 	return detections;
 }
 
+
+//if two boxes have an iou (intersection over union) that is two large, then they cannot represent two adjacent characters of the license plate 
+//so we discard the one with the lowest confidence rate
+void filter_iou(std::vector<int>& classIds,
+	std::vector<float>& confidences,
+	std::vector<cv::Rect>& vect_of_detected_boxes, const float& nmsThreshold
+)
+{
+#ifdef _DEBUG
+	assert(classIds.size() == confidences.size() && classIds.size() == vect_of_detected_boxes.size());
+#endif //_DEBUG
+	std::list<int> l_classIds;
+	std::list<float> l_confidences;
+	std::list<cv::Rect> list_of_detected_boxes;
+	//first copy vector to list which are faster when we need to delete element
+	std::copy(classIds.begin(), classIds.end(), std::back_inserter(l_classIds));
+	std::copy(confidences.begin(), confidences.end(), std::back_inserter(l_confidences));
+	std::copy(vect_of_detected_boxes.begin(), vect_of_detected_boxes.end(), std::back_inserter(list_of_detected_boxes));
+
+	//if two boxes have an iou (intersection over union) that is two large, then they cannot represent two adjacent characters of the license plate 
+	//so we discard the one with the lowest confidence rate
+	filter_iou2(list_of_detected_boxes, l_confidences,
+		l_classIds, nmsThreshold);
+
+	if (classIds.size() > l_classIds.size()) {
+		classIds.clear(); confidences.clear(); vect_of_detected_boxes.clear();
+		std::copy(l_classIds.begin(), l_classIds.end(), std::back_inserter(classIds));
+		std::copy(l_confidences.begin(), l_confidences.end(), std::back_inserter(confidences));
+		std::copy(list_of_detected_boxes.begin(), list_of_detected_boxes.end(), std::back_inserter(vect_of_detected_boxes));
+	}
+}
