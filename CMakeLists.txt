@@ -50,6 +50,7 @@ add_definitions(
 -DLPREDITOR_EXPORTS
 -DLPREDITOR_DEMO_NO_ARGS
 -DLPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
+-DLPR_EDITOR_USE_CUDA
 )
 
 SET_TARGET_PROPERTIES (${CMAKE_PROJECT_NAME} PROPERTIES DEFINE_SYMBOL  "COMPILING_DLL" )
@@ -66,10 +67,36 @@ foreach(flag_var
 endforeach(flag_var)
 endif(MSVC)
 target_link_libraries(${CMAKE_PROJECT_NAME} ${OpenCV_LIBS})
+
+set(USE_GPU true CACHE BOOL "whether to use gpu" FORCE)
 #************************
 ##onnxruntime
 #************************
 if (MSVC)
+if(USE_GPU)
+#if necessary, in the lines below, change ../onnxruntime-win-x64-1.4.0/ to point to the  actual path of the onnxruntime-win-x64-1.4.0 directory
+
+find_library(onnxruntime-win-x64-gpu-1.6.0_RELEASE
+ NAMES onnxruntime
+ PATHS 
+../onnxruntime-win-x64-gpu-1.6.0/lib
+ )
+SET(onnxruntime-win-x64-gpu-1.6.0_LIBRARY
+  debug ${onnxruntime-win-x64-gpu-1.6.0_RELEASE}
+  optimized ${onnxruntime-win-x64-gpu-1.6.0_RELEASE})
+ find_path(onnxruntime-win-x64-gpu-1.6.0_LIB_PATH onnxruntime.lib ../onnxruntime-win-x64-gpu-1.6.0/lib)
+ find_path(onnxruntime-win-x64-gpu-1.6.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-x64-gpu-1.6.0/include)
+MESSAGE( STATUS )
+MESSAGE( STATUS "-------------------------------------------------------------------------------" )
+MESSAGE( STATUS "onnxruntime-win-x64-gpu-1.6.0_INCLUDE =${onnxruntime-win-x64-gpu-1.6.0_INCLUDE}" )
+MESSAGE( STATUS "-------------------------------------------------------------------------------" )
+MESSAGE( STATUS )
+include_directories(${onnxruntime-win-x64-gpu-1.6.0_INCLUDE})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-gpu-1.6.0_LIBRARY})
+
+file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.dll")
+file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.lib")
+else (USE_GPU)
 #if necessary, in the lines below, change ../onnxruntime-win-x64-1.4.0/ to point to the  actual path of the onnxruntime-win-x64-1.4.0 directory
 find_library(onnxruntime-win-x64-1.4.0_RELEASE
  NAMES onnxruntime
@@ -89,32 +116,11 @@ MESSAGE( STATUS "---------------------------------------------------------------
 MESSAGE( STATUS "onnxruntime-win-x64-1.4.0_INCLUDE =${onnxruntime-win-x64-1.4.0_INCLUDE}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS )
-find_library(onnxruntime-win-x64-gpu-1.6.0_RELEASE
- NAMES onnxruntime
- PATHS 
-../onnxruntime-win-x64-gpu-1.6.0/lib
- )
-SET(onnxruntime-win-x64-gpu-1.6.0_LIBRARY
-  debug ${onnxruntime-win-x64-gpu-1.6.0_RELEASE}
-  optimized ${onnxruntime-win-x64-gpu-1.6.0_RELEASE})
- find_path(onnxruntime-win-x64-gpu-1.6.0_LIB_PATH onnxruntime.lib ../onnxruntime-win-x64-gpu-1.6.0/lib)
- find_path(onnxruntime-win-x64-gpu-1.6.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-x64-gpu-1.6.0/include)
-MESSAGE( STATUS )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-win-x64-gpu-1.6.0_LIBRARY =${onnxruntime-win-x64-gpu-1.6.0_LIBRARY}" )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-win-x64-gpu-1.6.0_INCLUDE =${onnxruntime-win-x64-gpu-1.6.0_INCLUDE}" )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS )
 include_directories(${onnxruntime-win-x64-1.4.0_INCLUDE})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-1.4.0_LIBRARY})
-#include_directories(${onnxruntime-win-x64-gpu-1.6.0_INCLUDE})
-#target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-gpu-1.6.0_LIBRARY})
 file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-1.4.0_LIB_PATH}/*.dll")
 file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-1.4.0_LIB_PATH}/*.lib")
-#file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.dll")
-#file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.lib")
+endif(USE_GPU)
 else (MSVC)
 #if necessary, in the lines below, change ../onnxruntime-linux-x64-1.6.0/ to point to the  actual path of the onnxruntime-linux-x64-1.6.0 directory
 find_library(onnxruntime-linux-x64-1.6.0_RELEASE
