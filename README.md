@@ -38,7 +38,7 @@ C library that performs automatic license plate recognition.
 # C API
 This C library is a C API, that allows to recognize license plate numbers in images. It is designed to use without pain, since the number of exported functions is strictly limited (only 3 functions). It exposes no structs (and of course no C++ classes). No need of any tuning also. It is ready to operate, on any latin license plate number image. Furthermore, it relies on standard technologies, that make it possible, to (build and) deploy on many platforms. Lastly, the library supports multithreading.
 ## Building the API
-The code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has not (yet) been tested (only CPU). 
+The code is standard c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). These two softwares are meant to operate on a vast range of hardwares and os. Based on that, it should be possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). Use of CUDA has been tested on windows : in order to desactivate CUDA just get rid off the preprocessing directive LPR_EDITOR_USE_CUDA. 
 #### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv)
 ### On Windows :
 #### Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)
