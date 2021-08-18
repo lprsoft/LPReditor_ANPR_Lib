@@ -17,15 +17,16 @@ sample_cpp/build
 .git
 **/x64
 **/*.dir
+**/*.cmake
 **/.vs
 **/CMakeFiles
 sample_cpp/build
-**/opencv*
-**/cuda*
-**/cudnn*
-/build/**/opencv*.dll
-**/onnxruntime.dll
+#**/opencv*
+#**/cuda*
+#**/cudnn*
+#/build/**/opencv*.dll
+#**/onnxruntime.dll
 /build/Debug
-/build/
+#/build/
 
 
