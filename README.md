@@ -292,14 +292,15 @@ Commercial-friendly licensing available (furthermore commercial version includes
 
 # Tests
 
-There is three different sets of images (brazilian, eu, us).
+There is a total of 455 images, split three different sets of images (brazilian, eu, us). I mergesd theses sets in a directory, called plate_un. Furthermore I renamed the images, in order that the license plate number figures in the filename. 
 
-| Origin  | command line          | Score |
-| :--------------- |:---------------| :-----:|
-| brazilian  |   sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_br        |  0.71 |
-| eu  | sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_eu             |   0.81 |
-| us  | sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_us          |    0.59 |
+To be fair, none of these images has been used in training/testing phase of the engine dev (by the way the engine, hasnot been trained with brazilian or american lps).
 
+| Origin  | command line          | Score : Exact readings| Score : readings with at most one error on one character (*)|
+| :--------------- |:---------------| :-----:| :-----:|
+| brazil + eu + us |   sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_un        |  0.79 |  0.94 |
+
+(*) It means that the numberplate, read by the engine, differs to the actual numberplate, with at most one character : either the engine misses a character, either it detects a charcater where there is nothing, either it missreads a character, either it reads correctly the numberplate.
 
 You cant make the test yourself using the build/release sample_cpp executable (with command line args shown above). 
 

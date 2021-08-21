@@ -322,8 +322,9 @@ int main(int argc, char* argv[])
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_eu";
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_us";
 
+	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_un";
 
-	cv::CommandLineParser parser(argc, argv, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
+	cv::CommandLineParser parser(argc_, argv_, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
 #else //LPREDITOR_DEMO_NO_ARGS
 	cv::CommandLineParser parser(argc, argv, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
 #endif //LPREDITOR_DEMO_NO_ARGS
