@@ -769,11 +769,12 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 //(with best confidences of its characters and with greateast size)
 				//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
+
+				float nmsThreshold = 0.3f;
 				pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(frame, classes,
 					confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp,
 					classId_last_country,
-					//availableAlpha, 
-					0.5f);
+					nmsThreshold);
 				if (one_lp.size()) {
 					//one_lp is the list of the boundinx boxes of a lp. one_lp is the best lps in the image (see func detect_with_different_confidences_then_separate_plates). And we are sure that the front element of the boxes is the lp.
 					cv::Rect lpn_roi = one_lp.front();
@@ -790,12 +791,69 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 						confidence_lpn_roi > 0.0f && lpn_roi.x + lpn_roi.width <= frame.cols && lpn_roi.y <= frame.rows) {
 						get_larger_roi(lpn_roi, frame.cols, frame.rows);
 #ifdef _DEBUG
-						if (lpn_roi.area() < ((frame.rows * frame.cols) / 40)) {
+						if (lpn_roi.area() < ((frame.rows * frame.cols) / 10)) {
 #else // _DEBUG		
 						if (lpn_roi.area() < ((frame.rows * frame.cols) / 10)) {
 #endif //_DEBUG
 							//image of lpn
 							cv::Mat subimage_ = frame(lpn_roi);
+							std::vector<int> vet_of_classIds;
+							std::vector<float> vect_of_confidences;
+							std::vector<cv::Rect> vect_of_detected_boxes;
+							//Given the @p input frame, create input blob, run net and return result detections.
+							Yolov5_anpr_onxx_detector* pnet_inside_lpn_detector = get_detector_with_smallest_size_bigger_than_image(parking_detectors, subimage_.cols, subimage_.rows);
+							std::list < std::list<float>> confidences_inside_lp; std::list < std::list<int>> classes_inside_lp; std::list < std::list<cv::Rect>> boxes_inside_lp;
+							std::list<float> inside_lp_confidence_one_lp;
+							std::list < cv::Rect> inside_lp_one_lp;
+							std::list<int> inside_lp_classIds_one_lp;
+							if (pnet_inside_lpn_detector != nullptr) {
+								pnet_inside_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, classes_inside_lp,
+									confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+									classId_last_country, nmsThreshold);
+							}
+							else pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, classes_inside_lp,
+								confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+								classId_last_country, nmsThreshold);
+
+							//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+							//it can deal with license pates that have two lines of charcaters
+							std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+							std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+							const float nmsThreshold_lpn = 0.5;
+							std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
+
+								tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+							if (inside_lp_one_lp.size() > 2) {
+								std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+								std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+								std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+
+								while (it_out_classes_ != tri_left_classIds.end()
+									&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+									if (
+										(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+										//(must_convert_from_NO_I_O_2_NO_O && *it_out_classes_ < availableAlpha_NO_O.nb_carac()) ||
+										(lpn.empty())
+										) {
+										//now we must change the coordinates of the box to fit global image
+										cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+										chosen_lp_boxes.push_back(box_in_global_image);
+										chosen_lp_classIds.push_back(*it_out_classes_);
+										chosen_lp_confidences.push_back(*it_confidences);
+									}
+									it_out_classes_++;
+									it_confidences++;
+									it_boxes++;
+								}
+#ifdef _DEBUG
+								assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+								assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+								lpns.push_back(lpn);
+								lp_country_class.push_back(classIds_one_lp.front());
+								lp_rois.push_back(one_lp.front());
+							}
+							/*
 							std::vector<int> vet_of_classIds;
 							std::vector<float> vect_of_confidences;
 							std::vector<cv::Rect> vect_of_detected_boxes;
@@ -849,7 +907,7 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 								lpns.push_back(lpn);
 								lp_country_class.push_back(classIds_one_lp.front());
 								lp_rois.push_back(one_lp.front());
-							}
+							}*/
 							else {
 								//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
 								//it can deal with license pates that have two lines of charcaters

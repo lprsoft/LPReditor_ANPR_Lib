@@ -73,99 +73,104 @@ set(USE_GPU true CACHE BOOL "whether to use gpu" FORCE)
 #************************
 if (MSVC)
 if(USE_GPU)
-#if necessary, in the lines below, change ../onnxruntime-win-x64-1.4.0/ to point to the  actual path of the onnxruntime-win-x64-1.4.0 directory
+#if necessary, in the lines below, change ../onnxruntime-win-gpu-x64-1.8.1/ to point to the  actual path of the onnxruntime-win-gpu-x64-1.8.1 directory
 
-find_library(onnxruntime-win-x64-gpu-1.6.0_RELEASE
+#if necessary, in the lines below, change ../onnxruntime-win-gpu-x64-1.8.1/ to point to the  actual path of the onnxruntime-win-gpu-x64-1.8.1 directory
+find_library(onnxruntime-win-gpu-x64-1.8.1_RELEASE
  NAMES onnxruntime
  PATHS 
-../onnxruntime-win-x64-gpu-1.6.0/lib
+../onnxruntime-win-gpu-x64-1.8.1/lib
  )
-SET(onnxruntime-win-x64-gpu-1.6.0_LIBRARY
-  debug ${onnxruntime-win-x64-gpu-1.6.0_RELEASE}
-  optimized ${onnxruntime-win-x64-gpu-1.6.0_RELEASE})
- find_path(onnxruntime-win-x64-gpu-1.6.0_LIB_PATH onnxruntime.lib ../onnxruntime-win-x64-gpu-1.6.0/lib)
- find_path(onnxruntime-win-x64-gpu-1.6.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-x64-gpu-1.6.0/include)
-MESSAGE( STATUS )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-win-x64-gpu-1.6.0_INCLUDE =${onnxruntime-win-x64-gpu-1.6.0_INCLUDE}" )
-MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS )
-include_directories(${onnxruntime-win-x64-gpu-1.6.0_INCLUDE})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-gpu-1.6.0_LIBRARY})
-
-file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.dll")
-file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-gpu-1.6.0_LIB_PATH}/*.lib")
-else (USE_GPU)
-#if necessary, in the lines below, change ../onnxruntime-win-x64-1.4.0/ to point to the  actual path of the onnxruntime-win-x64-1.4.0 directory
-find_library(onnxruntime-win-x64-1.4.0_RELEASE
- NAMES onnxruntime
- PATHS 
-../onnxruntime-win-x64-1.4.0/lib
- )
-SET(onnxruntime-win-x64-1.4.0_LIBRARY
-  debug ${onnxruntime-win-x64-1.4.0_RELEASE}
-  optimized ${onnxruntime-win-x64-1.4.0_RELEASE})
- find_path(onnxruntime-win-x64-1.4.0_LIB_PATH onnxruntime.lib ../onnxruntime-win-x64-1.4.0/lib)
- find_path(onnxruntime-win-x64-1.4.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-x64-1.4.0/include)
+SET(onnxruntime-win-gpu-x64-1.8.1_LIBRARY
+  debug ${onnxruntime-win-gpu-x64-1.8.1_RELEASE}
+  optimized ${onnxruntime-win-gpu-x64-1.8.1_RELEASE})
+ find_path(onnxruntime-win-gpu-x64-1.8.1_LIB_PATH onnxruntime.lib ../onnxruntime-win-gpu-x64-1.8.1/lib)
+ find_path(onnxruntime-win-gpu-x64-1.8.1_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-gpu-x64-1.8.1/include)
   MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-win-x64-1.4.0_LIBRARY =${onnxruntime-win-x64-1.4.0_LIBRARY}" )
+MESSAGE( STATUS "onnxruntime-win-gpu-x64-1.8.1_LIBRARY =${onnxruntime-win-gpu-x64-1.8.1_LIBRARY}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-win-x64-1.4.0_INCLUDE =${onnxruntime-win-x64-1.4.0_INCLUDE}" )
+MESSAGE( STATUS "onnxruntime-win-gpu-x64-1.8.1_INCLUDE =${onnxruntime-win-gpu-x64-1.8.1_INCLUDE}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS )
-include_directories(${onnxruntime-win-x64-1.4.0_INCLUDE})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-1.4.0_LIBRARY})
-file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-1.4.0_LIB_PATH}/*.dll")
-file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-1.4.0_LIB_PATH}/*.lib")
+include_directories(${onnxruntime-win-gpu-x64-1.8.1_INCLUDE})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-gpu-x64-1.8.1_LIBRARY})
+file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-gpu-x64-1.8.1_LIB_PATH}/*.dll")
+file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-gpu-x64-1.8.1_LIB_PATH}/*.lib")
+else (USE_GPU)
+find_library(onnxruntime-win-x64-1.8.1_RELEASE
+ NAMES onnxruntime
+ PATHS 
+../onnxruntime-win-x64-1.8.1/lib
+ )
+SET(onnxruntime-win-x64-1.8.1_LIBRARY
+  debug ${onnxruntime-win-x64-1.8.1_RELEASE}
+  optimized ${onnxruntime-win-x64-1.8.1_RELEASE})
+ find_path(onnxruntime-win-x64-1.8.1_LIB_PATH onnxruntime.lib ../onnxruntime-win-x64-1.8.1/lib)
+ find_path(onnxruntime-win-x64-1.8.1_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-win-x64-1.8.1/include)
+MESSAGE( STATUS )
+MESSAGE( STATUS "-------------------------------------------------------------------------------" )
+MESSAGE( STATUS "onnxruntime-win-x64-1.8.1_INCLUDE =${onnxruntime-win-x64-1.8.1_INCLUDE}" )
+MESSAGE( STATUS "-------------------------------------------------------------------------------" )
+MESSAGE( STATUS )
+include_directories(${onnxruntime-win-x64-1.8.1_INCLUDE})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-win-x64-1.8.1_LIBRARY})
+
+file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-win-x64-1.8.1_LIB_PATH}/*.dll")
+file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-win-x64-1.8.1_LIB_PATH}/*.lib")
 endif(USE_GPU)
 else (MSVC)
-#if necessary, in the lines below, change ../onnxruntime-linux-x64-1.6.0/ to point to the  actual path of the onnxruntime-linux-x64-1.6.0 directory
-find_library(onnxruntime-linux-x64-1.6.0_RELEASE
+
+
+if(USE_GPU)
+#if necessary, in the lines below, change ../onnxruntime-linux-x64-gpu-1.8.1/ to point to the  actual path of the onnxruntime-linux-x64-gpu-1.8.1 directory
+find_library(onnxruntime-linux-x64-gpu-1.8.1_RELEASE
  NAMES libonnxruntime.so
  PATHS 
-../onnxruntime-linux-x64-1.6.0/lib
+../onnxruntime-linux-x64-gpu-1.8.1/lib
  )
-SET(onnxruntime-linux-x64-1.6.0_LIBRARY
-  debug ${onnxruntime-linux-x64-1.6.0_RELEASE}
-  optimized ${onnxruntime-linux-x64-1.6.0_RELEASE}) 
- find_path(onnxruntime-linux-x64-1.6.0_LIB_PATH libonnxruntime.so ../onnxruntime-linux-x64-1.6.0/lib)
- find_path(onnxruntime-linux-x64-1.6.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-linux-x64-1.6.0/include)
+SET(onnxruntime-linux-x64-gpu-1.8.1_LIBRARY
+  debug ${onnxruntime-linux-x64-gpu-1.8.1_RELEASE}
+  optimized ${onnxruntime-linux-x64-gpu-1.8.1_RELEASE}) 
+ find_path(onnxruntime-linux-x64-gpu-1.8.1_LIB_PATH libonnxruntime.so ../onnxruntime-linux-x64-gpu-1.8.1/lib)
+ find_path(onnxruntime-linux-x64-gpu-1.8.1_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-linux-x64-gpu-1.8.1/include)
   MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-linux-x64-1.6.0_LIBRARY =${onnxruntime-linux-x64-1.6.0_LIBRARY}" )
+MESSAGE( STATUS "onnxruntime-linux-x64-gpu-1.8.1_LIBRARY =${onnxruntime-linux-x64-gpu-1.8.1_LIBRARY}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-linux-x64-1.6.0_INCLUDE =${onnxruntime-linux-x64-1.6.0_INCLUDE}" )
+MESSAGE( STATUS "onnxruntime-linux-x64-gpu-1.8.1_INCLUDE =${onnxruntime-linux-x64-gpu-1.8.1_INCLUDE}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS )
-find_library(onnxruntime-linux-x64-gpu-1.6.0_RELEASE
+file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-linux-x64-gpu-1.8.1_LIB_PATH}/*.so")
+file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-linux-x64-gpu-1.8.1_LIB_PATH}/*.so")
+include_directories(${onnxruntime-linux-x64-gpu-1.8.1_INCLUDE})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-linux-x64-gpu-1.8.1_LIBRARY})
+else (USE_GPU)
+find_library(onnxruntime-linux-x64-1.8.1_RELEASE
  NAMES libonnxruntime.so
  PATHS 
-../onnxruntime-linux-x64-gpu-1.6.0/lib
+../onnxruntime-linux-x64-1.8.1/lib
  )
-SET(onnxruntime-linux-x64-gpu-1.6.0_LIBRARY
-  debug ${onnxruntime-linux-x64-gpu-1.6.0_RELEASE}
-  optimized ${onnxruntime-linux-x64-gpu-1.6.0_RELEASE})
- find_path(onnxruntime-linux-x64-gpu-1.6.0_LIB_PATH libonnxruntime.so ../onnxruntime-linux-x64-gpu-1.6.0/lib)
- find_path(onnxruntime-linux-x64-gpu-1.6.0_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-linux-x64-gpu-1.6.0/include)
+SET(onnxruntime-linux-x64-1.8.1_LIBRARY
+  debug ${onnxruntime-linux-x64-1.8.1_RELEASE}
+  optimized ${onnxruntime-linux-x64-1.8.1_RELEASE})
+ find_path(onnxruntime-linux-x64-1.8.1_LIB_PATH libonnxruntime.so ../onnxruntime-linux-x64-1.8.1/lib)
+ find_path(onnxruntime-linux-x64-1.8.1_INCLUDE onnxruntime_cxx_api.h ../onnxruntime-linux-x64-1.8.1/include)
   MESSAGE( STATUS )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-linux-x64-gpu-1.6.0_LIBRARY =${onnxruntime-linux-x64-gpu-1.6.0_LIBRARY}" )
+MESSAGE( STATUS "onnxruntime-linux-x64-1.8.1_LIBRARY =${onnxruntime-linux-x64-1.8.1_LIBRARY}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
-MESSAGE( STATUS "onnxruntime-linux-x64-gpu-1.6.0_INCLUDE =${onnxruntime-linux-x64-gpu-1.6.0_INCLUDE}" )
+MESSAGE( STATUS "onnxruntime-linux-x64-1.8.1_INCLUDE =${onnxruntime-linux-x64-1.8.1_INCLUDE}" )
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS )
-include_directories(${onnxruntime-linux-x64-1.6.0_INCLUDE})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-linux-x64-1.6.0_LIBRARY})
-#include_directories(${onnxruntime-linux-x64-gpu-1.6.0_INCLUDE})
-#target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-linux-x64-gpu-1.6.0_LIBRARY})
-file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-linux-x64-1.6.0_LIB_PATH}/*.so")
-file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-linux-x64-1.6.0_LIB_PATH}/*.so")
-#file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-linux-x64-gpu-1.6.0_LIB_PATH}/*.so")
-#file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-linux-x64-gpu-1.6.0_LIB_PATH}/*.so")
+file(GLOB ONNXRUNTIME_DLLS "${onnxruntime-linux-x64-1.8.1_LIB_PATH}/*.so")
+file(GLOB ONNXRUNTIME_LIBS "${onnxruntime-linux-x64-1.8.1_LIB_PATH}/*.so")
+include_directories(${onnxruntime-linux-x64-1.8.1_INCLUDE})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${onnxruntime-linux-x64-1.8.1_LIBRARY})
+endif(USE_GPU)
 endif (MSVC) 
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
 MESSAGE( STATUS "ONNXRUNTIME_DLLS =${ONNXRUNTIME_DLLS}" )
@@ -178,18 +183,17 @@ MESSAGE( STATUS )
 #************************
 #CUSTOM POST BUILD COMMAND
 #************************
-
 if(MSVC)
 file(GLOB OPENCV_FOR_LPREDITOR_DLLS_DEBUG "${OpenCV_DIR}/bin/Debug/opencv_dnn*d.dll" 
-"${OpenCV_DIR}/bin/Debug/opencv_highgui*d.dll" 
-"${OpenCV_DIR}/bin/Debug/opencv_videoio*d.dll" 
+#"${OpenCV_DIR}/bin/Debug/opencv_highgui*d.dll" 
+#"${OpenCV_DIR}/bin/Debug/opencv_videoio*d.dll" 
 "${OpenCV_DIR}/bin/Debug/opencv_imgcodecs*d.dll"
 "${OpenCV_DIR}/bin/Debug/opencv_imgproc*d.dll" 
 "${OpenCV_DIR}/bin/Debug/opencv_core*d.dll"
 )
 file(GLOB OPENCV_FOR_LPREDITOR_DLLS_RELEASE "${OpenCV_DIR}/bin/Release/opencv_dnn*.dll" 
-"${OpenCV_DIR}/bin/Release/opencv_highgui*.dll" 
-"${OpenCV_DIR}/bin/Release/opencv_videoio*.dll" 
+#"${OpenCV_DIR}/bin/Release/opencv_highgui*.dll" 
+#"${OpenCV_DIR}/bin/Release/opencv_videoio*.dll" 
 "${OpenCV_DIR}/bin/Release/opencv_imgcodecs*.dll"
 "${OpenCV_DIR}/bin/Release/opencv_imgproc*.dll" 
 "${OpenCV_DIR}/bin/Release/opencv_core*.dll"
@@ -200,7 +204,8 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME}
 POST_BUILD
 COMMAND ${CMAKE_COMMAND} -E copy_if_different
 ${ONNXRUNTIME_DLLS} ${ONNXRUNTIME_LIBS} 
-${OPENCV_FOR_LPREDITOR_DLLS_RELEASE} ${OPENCV_FOR_LPREDITOR_DLLS_DEBUG}
+${OPENCV_FOR_LPREDITOR_DLLS_RELEASE} 
+#${OPENCV_FOR_LPREDITOR_DLLS_DEBUG}
 $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>)
 else (MSVC)
 add_custom_command(TARGET ${CMAKE_PROJECT_NAME}

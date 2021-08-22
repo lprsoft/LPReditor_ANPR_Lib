@@ -1,25 +1,24 @@
 # LPReditor_ANPR_Lib
-C library that performs automatic license plate recognition.
+C library that performs license plate recognition.
   
-*Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on latin characters.*
+*Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on any latin license plate.*
 - [LPReditor_ANPR_Lib](#lpreditor_anpr_lib)
 - [C API](#c-api)
 	- [Building the API](#building-the-api)
-			- [(Common) Step 1 : Install !OpenCV and CUDA & cuDNN (Required only if you want to use CUDA Execution Provider)](#common-step-1--install--and-cuda--cudnn-required-only-if-you-want-to-use-cuda-execution-provider)
+			- [(Common) Step 1 : Install !OpenCV and CUDA & cuDNN (Optional but recommended if you want to use CUDA Execution Provider)](#common-step-1--install--and-cuda--cudnn-optional-but-recommended-if-you-want-to-use-cuda-execution-provider)
 		- [On Windows :](#on-windows-)
-			- [Step 2 : !onnxruntime-win-x64-1.4.0](#step-2--)
+			- [Step 2 : !onnxruntime-win-x64-1.x.0](#step-2--)
 			- [Step 3 : modify CMakeLists.txt](#step-3--modify-cmakeliststxt)
 			- [Step 4 : cmake](#step-4--cmake)
 			- [Step 5 : build solution in Visual Studio](#step-5--build-solution-in-visual-studio)
 		- [On Linux :](#on-linux-)
-			- [Step 2 : !onnxruntime-linux-x64-1.6.0](#step-2---1)
+			- [Step 2 : !onnxruntime-linux-x64-1.x.0](#step-2---1)
 			- [Step 3 : modify CMakeLists.txt](#step-3--modify-cmakeliststxt-1)
 			- [Step 4 : cmake](#step-4--cmake-1)
 			- [Step 5 : make in the build LPReditor_ANPR/build dir](#step-5--make-in-the-build-lpreditor_anprbuild-dir)
 	- [Usage](#usage)
 	- [API Documentation](#api-documentation)
 		- [*init_detector*](#init_detector)
-		- [*detect_without_lpn_detection*](#detect_without_lpn_detection)
 		- [*detect_with_lpn_detection*](#detect_with_lpn_detection)
 		- [*close_detector*](#close_detector)
 - [sample_cpp](#sample_cpp)
@@ -39,28 +38,29 @@ C library that performs automatic license plate recognition.
 - [License](#license)
 - [Tests](#tests)
 # C API
-This C library is a C API. It is designed to be used without pain, since the number of exported functions is strictly limited. It exposes no structs (and no C++ classes). No need of any tuning also (but some optiizations are possble). It is ready to operate, on any latin license plate number image. Lastly, the library supports multithreading.
+This C library is a C API. It is designed to be used without pain, the number of exported functions is limited to three. It exposes no classes. No need of any tuning also. It is ready to operate, on any latin license plate number image. [Accuracy and speed](#tests) are enough for most commercial applications. [Reproducibly](#tests) tests are available. The library supports multithreading.
 ## Building the API
-The code is c++ and relies on ![OpenCV](https://github.com/opencv/opencv) and ![ONNXRuntime](https://github.com/microsoft/onnxruntime). Based on that, it is possible to build on various platforms. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). 
+The code is standard c++ and relies on ![ONNXRuntime](https://github.com/microsoft/onnxruntime). Based on that, it is possible to build on various platforms, with our without CUDA. Among them, I tested successfully Windows 10 and Linux Ubuntu (20.04). 
 
-#### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv) and CUDA & cuDNN (Required only if you want to use CUDA Execution Provider)
+#### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv) and CUDA & cuDNN (Optional but recommended if you want to use CUDA Execution Provider)
 
 The installation process of CUDA is quite straightforward. You can Install CUDA v11.0 from 
 ![here](https://developer.nvidia.com/cuda-11.0-download-archive). Next, install cuDNN by downloading the installer from ![here](https://developer.nvidia.com/rdp/cudnn-archive)
 ### On Windows :
-#### Step 2 : ![onnxruntime-win-x64-1.4.0](https://github.com/microsoft/onnxruntime/releases)
-Download onnxruntime-win-x64-1.4.0.zip and decompress somewhere
+#### Step 2 : ![onnxruntime-win-x64-1.x.0](https://github.com/microsoft/onnxruntime/releases)
+Download onnxruntime-win-x64-1.x.0.zip and decompress somewhere. 
+I used onnxruntime-...-1.8.1, and noticed that I had to change an include directive, in the file cpu_provider_factory.h (line 7), *#include "core/framework/provider_options.h"* to *#include "provider_options.h"* .
 #### Step 3 : modify CMakeLists.txt
-In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-win-x64-1.4.0/ to point to the actual path of the onnxruntime-win-x64-1.4.0 directory
+In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-win-x64-.../ to point to the actual path of the onnxruntime-win-x64... directory
 #### Step 4 : cmake
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
 #### Step 5 : build solution in Visual Studio
 
 ### On Linux :
-#### Step 2 : ![onnxruntime-linux-x64-1.6.0](https://github.com/microsoft/onnxruntime/releases)
-Download onnxruntime-linux-x64-1.6.0.tgz and decompress somewhere
+#### Step 2 : ![onnxruntime-linux-x64-1.x.0](https://github.com/microsoft/onnxruntime/releases)
+Download onnxruntime-linux-x64-1.x.0.tgz and decompress somewhere
 #### Step 3 : modify CMakeLists.txt
-In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-linux-x64-1.6.0/ to point to the actual path of the onnxruntime-linux-x64-1.6.0 directory
+In LPReditor_ANPR/CMakeLists.txt, change ../onnxruntime-linux-x64-.../ to point to the actual path of the onnxruntime-linux-x64-... directory
 #### Step 4 : cmake
 From cmake-gui, configure and generate LPReditor_ANPR/CMakeLists.txt 
 #### Step 5 : make in the build LPReditor_ANPR/build dir
@@ -144,42 +144,11 @@ size_t init_detector(size_t len, const char* model_file)
 
 ```
 
-### *detect_without_lpn_detection*
-```javascript
-/**
-	@brief detect lpn in frame. this function is equivalent to detect_with_lpn_detection (same result and same arguments). 
-	It uses just one model instead of two if you opt for detect_with_lpn_detection. 
-	The repo comes with two models namely lpreditor_anpr_focused_on_lp and lpreditor_anpr_global_view. 
-	If you use this function, make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function. (see sample_cpp for uses examples).
-	@param width : width of source image
-	@param height : height of source image
-	@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	@param *pbData : source image bytes buffer
-	@param step Number of bytes each matrix row occupies. The value should include the padding bytes at the end of each row, if any..See sample_cpp for a use case.
-	@param id: unique id to a model initialized in init_detector function. See init_detector function.
-	@param lpn_len : length of the preallocated c string to store the resulting license plate number.
-	@param lpn : the resulting license plate number as a c string, allocated by the calling program.
-	@return true upon success
-	*/
-
-extern "C"
-#ifdef _WINDOWS
-__declspec(dllexport)
-#endif //_WINDOWS
-bool detect_without_lpn_detection
-(const int width,//width of image
-	const int height,//height of image i.e. the specified dimensions of the image
-	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	void* pbData, size_t step// source image bytes buffer
-	, size_t id, size_t lpn_len, char* lpn)	
-
-```
 
 ### *detect_with_lpn_detection*
 ```javascript
 /**
-	@brief detect lpn in frame. this function is equivalent to detect_without_lpn_detection (same usage and same arguments) 
-	but it is more accurate (and also longer to run) since it uses two models instead of one. 
+	@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
 	please make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function (see sample_cpp for uses examples).
 	@param width : width of source image
 	@param height : height of source image
@@ -292,15 +261,16 @@ Commercial-friendly licensing available (furthermore commercial version includes
 
 # Tests
 
-There is three different sets of images (brazilian, eu, us).
+The the openalpr benchmark is made of 455 images, originally split in three different sets (brazilian, eu, us). I mergesd theses sets in a single directory, called plate_un. Furthermore I renamed the images, in order that, the license plate number is shown in the filename. 
 
-| Origin  | command line          | Score |
-| :--------------- |:---------------| :-----:|
-| brazilian  |   sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_br        |  0.71 |
-| eu  | sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_eu             |   0.81 |
-| us  | sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_us          |    0.59 |
+To be fair, none of these images has been used in training/testing phase of this engine dev (by the way, the engine has not been trained with any brazilian or american lps).
 
+| Origin  | command line          | Score : Exact readings| Score : readings with at most one error on one character | Speed (im/s) with ONNX provided with CUDA Execution (Nvidia GeForce RTX 2060S)|
+| :--------------- |:---------------| :-----:| :-----:| :-----:|
+| brazil + eu + us |   sample_cpp -focused_on_lp_model=../../data/models/lpreditor_anpr_focused_on_lp.onnx -global_view_model=../../data/models/lpreditor_anpr_global_view.onnx -dir=../../data/images/benchmarks-master/endtoend/plate_un        |  0.79 |  0.94 | 4 im/s |
 
-You cant make the test yourself using the build/release sample_cpp executable (with command line args shown above). 
+One error on one character means that the numberplate, read by the engine, differs to the actual numberplate, with at most one character : either the engine misses a character, either it detects a charcater where there is nothing, either it missreads a character, either it reads correctly the numberplate.
+
+You can make the test yourself, using the build/release sample_cpp executable (with command line args shown above). 
 
 
