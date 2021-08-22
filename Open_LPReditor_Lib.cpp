@@ -254,6 +254,9 @@ size_t init_detector(size_t len, const char* model_file)
 		return 0;
 	}
 }
+
+#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
+
 /**
 	@brief detect_without_lpn_detection lpn in frame
 	@param width : width of source image
@@ -306,7 +309,6 @@ bool detect_without_lpn_detection
 			//for normal plates
 			(*it)->evaluate_without_lpn_detection(destMat, lpn_str);
 			//for small plates
-			//(*it)->detect_without_lpn_detection(destMat, lpn_str);
 			lck.unlock();
 			std::string::const_iterator it_lpn(lpn_str.begin());
 			int i = 0;
@@ -326,6 +328,7 @@ bool detect_without_lpn_detection
 		}
 	}
 }
+#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 extern "C"
 #ifdef _WINDOWS
 __declspec(dllexport)
@@ -365,7 +368,6 @@ bool detect_with_lpn_detection
 				//for normal plates
 				(*it_global_view)->evaluate_lpn_with_lpn_detection(*(*it_focused_on_lp), destMat, lpn_str);
 				//for small plates
-				//(*it_global_view)->detect_without_lpn_detection(destMat, lpn_str);
 				lck.unlock();
 			}
 			else {
@@ -374,7 +376,6 @@ bool detect_with_lpn_detection
 				//for normal plates
 				(*it_global_view)->evaluate_lpn_with_lpn_detection(*(*it_global_view), destMat, lpn_str);
 				//for small plates
-				//(*it_global_view)->detect_without_lpn_detection(destMat, lpn_str);
 				lck.unlock();
 			}
 			std::string::const_iterator it_lpn(lpn_str.begin());

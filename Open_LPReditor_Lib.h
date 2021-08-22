@@ -51,10 +51,10 @@ extern "C"
 		@see
 		*/
 	size_t init_detector(size_t len, const char* model_file);
+
 	/**
-		@brief detect lpn in frame. this function is equivalent to detect_without_lpn_detection (same usage and same arguments)
-		but it is more accurate (and also longer to run) since it uses two models instead of one.
-		please make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function (see sample_cpp for uses examples).
+		@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
+	please make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function (see sample_cpp for uses examples).
 	@param width : width of source image
 		@param width : width of source image
 		@param height : height of source image
@@ -80,6 +80,9 @@ extern "C"
 		void* pbData,
 		size_t step// source image bytes buffer
 		, size_t id_global_view, size_t id_focused_on_lp, size_t lpn_len, char* lpn);
+
+#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
+
 	/**
 		@brief detect lpn in frame. this function is equivalent to detect_with_lpn_detection (same result and same arguments).
 		It uses just one model instead of two if you opt for detect_with_lpn_detection.
@@ -107,6 +110,7 @@ extern "C"
 		const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
 		void* pbData, size_t step// source image bytes buffer
 		, size_t id, size_t lpn_len, char* lpn);
+#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 #ifdef _WINDOWS
 	__declspec(dllimport)
 #else //_WINDOWS

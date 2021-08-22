@@ -7,6 +7,9 @@
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 #include "../include/utils_image_file.h"
+
+
+#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_image(const std::string& image_filename, const std::string& model_filename) {
 	int flags = -1;//as is
 	cv::Mat frame = cv::imread(image_filename, flags);
@@ -47,6 +50,7 @@ void detect_one_image(const std::string& image_filename, const std::string& mode
 		);
 	}
 }
+#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_image(const std::string& image_filename, const std::string& model_filename_global_view
 	, const std::string& model_filename_focused_on_lp) {
 	int flags = -1;//as is
@@ -100,6 +104,7 @@ void detect_one_image(const std::string& image_filename, const std::string& mode
 		);
 	}
 }
+#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_directory(const std::string& dir, const std::string& model_filename) {
 #ifdef LPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
 	std::filesystem::path p(std::filesystem::current_path());
@@ -189,6 +194,7 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 	bool session_closed = close_detector(id//id : unique interger to identify the detector to be freed
 	);
 }
+#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_directory(const std::string& dir, const std::string& model_filename_global_view
 	, const std::string& model_filename_focused_on_lp) {
 #ifdef LPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
@@ -324,7 +330,7 @@ int main(int argc, char* argv[])
 
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_un";
 
-	cv::CommandLineParser parser(argc_, argv_, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
+	cv::CommandLineParser parser(argc, argv, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
 #else //LPREDITOR_DEMO_NO_ARGS
 	cv::CommandLineParser parser(argc, argv, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }");
 #endif //LPREDITOR_DEMO_NO_ARGS
@@ -392,7 +398,7 @@ int main(int argc, char* argv[])
 		}
 		else {
 			//process all images files of a directory
-			//step 5 call the detect_without_lpn_detection function of the Yolov5_anpr_onxx_detector object, on a cv::mat object or an image file.
+			//step 5 call the detect_with_lpn_detection function of the Yolov5_anpr_onxx_detector object, on a cv::mat object or an image file.
 			//This will retieves boxes and classes of the license plate characters
 			detect_one_directory(dir, global_view_model_filename, focused_on_lp_model_filename);
 		}

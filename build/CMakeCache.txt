@@ -343,7 +343,7 @@ LPReditor_ANPR_Lib_INC:PATH=D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib
 LPReditor_ANPR_Lib_IS_TOP_LEVEL:STATIC=ON
 
 //Dependencies for the target
-LPReditor_ANPR_Lib_LIB_DEPENDS:STATIC=general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_gapi;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_stitching;general;opencv_video;general;opencv_videoio;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_cudaarithm;general;opencv_cudabgsegm;general;opencv_cudacodec;general;opencv_cudafeatures2d;general;opencv_cudafilters;general;opencv_cudaimgproc;general;opencv_cudalegacy;general;opencv_cudaobjdetect;general;opencv_cudaoptflow;general;opencv_cudawarping;general;opencv_cudev;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dnn_superres;general;opencv_dpm;general;opencv_face;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_intensity_transform;general;opencv_optflow;general;opencv_quality;general;opencv_rapid;general;opencv_rgbd;general;opencv_saliency;general;opencv_shape;general;opencv_superres;general;opencv_surface_matching;general;opencv_text;general;opencv_videostab;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;debug;D:/Programmation/LPReditor-engine/onnxruntime-win-x64-gpu-1.6.0/lib/onnxruntime.lib;optimized;D:/Programmation/LPReditor-engine/onnxruntime-win-x64-gpu-1.6.0/lib/onnxruntime.lib;
+LPReditor_ANPR_Lib_LIB_DEPENDS:STATIC=general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_gapi;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_stitching;general;opencv_video;general;opencv_videoio;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_cudaarithm;general;opencv_cudabgsegm;general;opencv_cudacodec;general;opencv_cudafeatures2d;general;opencv_cudafilters;general;opencv_cudaimgproc;general;opencv_cudalegacy;general;opencv_cudaobjdetect;general;opencv_cudaoptflow;general;opencv_cudawarping;general;opencv_cudev;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dnn_superres;general;opencv_dpm;general;opencv_face;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_intensity_transform;general;opencv_optflow;general;opencv_quality;general;opencv_rapid;general;opencv_rgbd;general;opencv_saliency;general;opencv_shape;general;opencv_superres;general;opencv_surface_matching;general;opencv_text;general;opencv_videostab;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;debug;D:/Programmation/LPReditor-engine/onnxruntime-win-gpu-x64-1.8.1/lib/onnxruntime.lib;optimized;D:/Programmation/LPReditor-engine/onnxruntime-win-gpu-x64-1.8.1/lib/onnxruntime.lib;
 
 //Path to a file.
 LPReditor_ANPR_Lib_ROOT:PATH=D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib
@@ -362,6 +362,24 @@ OpenCV_DIR:PATH=D:/Programmation/LPReditor-engine/opencv-master/build
 
 //whether to use gpu
 USE_GPU:BOOL=true
+
+//Path to a file.
+onnxruntime-win-gpu-x64-1.8.1_INCLUDE:PATH=D:/Programmation/LPReditor-engine/onnxruntime-win-gpu-x64-1.8.1/include
+
+//Path to a file.
+onnxruntime-win-gpu-x64-1.8.1_LIB_PATH:PATH=D:/Programmation/LPReditor-engine/onnxruntime-win-gpu-x64-1.8.1/lib
+
+//Path to a library.
+onnxruntime-win-gpu-x64-1.8.1_RELEASE:FILEPATH=D:/Programmation/LPReditor-engine/onnxruntime-win-gpu-x64-1.8.1/lib/onnxruntime.lib
+
+//Path to a file.
+onnxruntime-win-x64-1.8.1_INCLUDE:PATH=D:/Programmation/LPReditor-engine/onnxruntime-win-x64-1.8.1/include
+
+//Path to a file.
+onnxruntime-win-x64-1.8.1_LIB_PATH:PATH=D:/Programmation/LPReditor-engine/onnxruntime-win-x64-1.8.1/lib
+
+//Path to a library.
+onnxruntime-win-x64-1.8.1_RELEASE:FILEPATH=D:/Programmation/LPReditor-engine/onnxruntime-win-x64-1.8.1/lib/onnxruntime.lib
 
 //Path to a file.
 onnxruntime-win-x64-gpu-1.6.0_INCLUDE:PATH=D:/Programmation/LPReditor-engine/onnxruntime-win-x64-gpu-1.6.0/include
