@@ -147,4 +147,3 @@ int Levenshtein::Get(const char *a, size_t aLen, const char *b, size_t bLen)
 	}
 	return arr[bLen][aLen];
 }
-

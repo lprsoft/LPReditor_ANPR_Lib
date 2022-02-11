@@ -62,25 +62,6 @@ std::string getTrueLPN(const std::string& filename, const bool& vrai_lpn_after_u
 			@return
 			@see
 			*/
-/*
-bool could_be_lpn(const std::string& lpn) {
-	const int number_of_characters = 36;
-	char LATIN_LETTERS_NO_I_O_LATIN_DIGITS[number_of_characters] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J','K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-		'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9','0' };
-	std::string::const_iterator it(lpn.begin());
-	std::list<char> chars;
-	while (it != lpn.end()) {
-		int i;
-		for (i = 0; i < number_of_characters; i++) {
-			if (*it == LATIN_LETTERS_NO_I_O_LATIN_DIGITS[i]) break;
-		}
-		if (i < number_of_characters) {
-			it++;
-		}
-		else return false;
-	}
-	return true;
-}*/
 //extracts from a test directory all images files 
 void load_images_filenames(const std::string& dir, std::list<std::string>& image_filenames)
 {
@@ -132,7 +113,57 @@ char get_char(const int classe) {
 		return _LATIN_LETTERS_LATIN_DIGITS[classe];
 	else return '?';
 }
+//retourne l'index du caractere LPChar
+int get_index(const char LPChar)
+{
+	switch (LPChar) {
+	case 'A': {return  0; } break;
+	case 'B': {return  1; } break;
+	case 'C': {return  2; } break;
+	case 'D': {return  3; } break;
+	case 'E': {return  4; } break;
+	case 'F': {return  5; } break;
+	case 'G': {return  6; } break;
+	case 'H': {return  7; } break;
+	case 'I': {return  8; } break;
+	case 'J': {return  9; } break;
+	case 'K': {return  10; } break;
+	case 'L': {return  11; } break;
+	case 'M': {return  12; } break;
+	case 'N': {return  13; } break;
+	case 'O': {return  14; } break;
+	case 'P': {return  15; } break;
+	case 'Q': {return  16; } break;
+	case 'R': {return  17; } break;
+	case 'S': {return  18; } break;
+	case 'T': {return  19; } break;
+	case 'U': {return  20; } break;
+	case 'V': {return  21; } break;
+	case 'W': {return  22; } break;
+	case 'X': {return  23; } break;
+	case 'Y': {return  24; } break;
+	case 'Z': {return  25; } break;
+	case '0': {return  26; } break;
+	case '1': {return  27; } break;
+	case '2': {return  28; } break;
+	case '3': {return  29; } break;
+	case '4': {return  30; } break;
+	case '5': {return  31; } break;
+	case '6': {return  32; } break;
+	case '7': {return  33; } break;
+	case '8': {return  34; } break;
+	case '9': {return  35; } break;
+	}
+	return -1;
+}
 //checks if the characters contained in lpn are compatible with the alphabet
+/**
+		@brief
+		//checks if the characters contained in lpn are compatible with the alphabet
+			@param lpn: the registration of the vehicle as a string
+			@return
+			@see
+			*/
 bool could_be_lpn(const std::string& lpn) {
 	char _LATIN_LETTERS_LATIN_DIGITS[NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J','K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
 		'Y', 'Z','0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
@@ -149,66 +180,4 @@ bool could_be_lpn(const std::string& lpn) {
 		else return false;
 	}
 	return true;
-}
-//this func saves an image composed of input im with a list of roi (colors in green) 
-void show_boxes(const cv::Mat& frame, const std::list<cv::Rect>& true_boxes, const std::list<int>& classesId) {
-	std::vector<std::string> classes;
-	for (size_t i = 0; i < 35; i++) {
-		std::string s; s += get_char(int(i));
-		classes.push_back(s);
-	}
-	classes.push_back("[]");
-#ifdef _DEBUG
-	cv::Scalar mean_ = cv::mean(frame);
-	assert(mean_[0] > 30.0f || mean_[0] < 220.0f);
-#endif //_DEBUG
-	std::string lpn;
-	cv::Mat frame_copy = frame.clone();
-	cv::Size normalsize(frame.cols * 2, frame.rows * 2);
-	cv::resize(frame, frame_copy, normalsize);
-	std::list<cv::Rect>::const_iterator it_boxes(true_boxes.begin());
-	std::list<int>::const_iterator it_classesId(classesId.begin());
-	const cv::Scalar& col = cv::Scalar(0, 255, 0);
-	while (it_boxes != true_boxes.end() && it_classesId != classesId.end()) {
-		cv::Rect r(it_boxes->x * 2, it_boxes->y * 2, (it_boxes->width) * 2, (it_boxes->height) * 2);
-		//::drawPred(r, frame_copy, col);
-		::drawPred(*it_classesId, r.x, r.y, r.x + r.width, r.y + r.height, frame_copy, classes);
-		lpn += classes[*it_classesId];
-		it_boxes++; it_classesId++;
-	}
-#ifdef _DEBUG
-	bool show_image = true;
-	const int time_delay = 4000;
-	if (show_image && time_delay >= 0) {
-		cv::imshow(lpn, frame_copy);
-	}
-	if (time_delay >= 0) {
-		if (show_image && time_delay == 0) {
-			char c = cv::waitKey(time_delay);
-		}
-		else if (time_delay > 0) {
-			char c = cv::waitKey(time_delay);
-		}
-	}
-	if (show_image && time_delay >= 0) {
-		cv::destroyAllWindows();
-	}
-#endif //_DEBUG
-}
-void drawPred(int classId, int left, int top, int right, int bottom, cv::Mat& frame, const std::vector<std::string>& classes)
-{
-	cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 1);
-	std::string label;// = cv::format("%.2f", conf);
-	if (!classes.empty())
-	{
-		CV_Assert(classId < (int)classes.size());
-		label = classes[classId] //+ ": " + label
-			;
-	}
-	int baseLine;
-	cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-	top = cv::max(top, labelSize.height);
-	cv::rectangle(frame, cv::Point(left, top - labelSize.height), cv::Point(left + labelSize.width, top + baseLine), cv::Scalar::all(255), cv::FILLED);
-	cv::rectangle(frame, cv::Point(left, top - labelSize.height), cv::Point(left + labelSize.width, top + baseLine), cv::Scalar::all(255), cv::FILLED);
-	cv::putText(frame, label, cv::Point(left, top), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar());
 }

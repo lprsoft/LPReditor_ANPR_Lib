@@ -6,7 +6,6 @@ PROJECT(sample_cpp)
 #PREPROCESSOR
 #************************
 add_definitions(
--DLPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
 -DLPREDITOR_DEMO_NO_ARGS
 )
 
@@ -34,7 +33,7 @@ find_path(OPENCV4_ROOT OpenCV.sln ../../opencv-master/build/)
 set(OpenCV_DIR OPENCV4_ROOT)
 if(NOT OpenCV_FOUND)
 find_path(OpenCV_DIR OpenCV.sln ../../opencv-master/build/)
-endif(OpenCV_FOUND)
+endif(NOT OpenCV_FOUND)
 else (MSVC)
 endif (MSVC) 
 #if necessary change the path ../opencv-master/build/ to the path where you build opencv

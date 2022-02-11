@@ -20,10 +20,10 @@ GNU General Public License for more details.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/dnn/dnn.hpp>
 #include <filesystem>
-OnnxDetector::OnnxDetector(Ort::Env& env_, const ORTCHAR_T* model_path, const Ort::SessionOptions& options) : env(env_), session(env_, model_path, options) {
+OnnxDetector::OnnxDetector(Ort::Env& env_, const ORTCHAR_T* model_path, const Ort::SessionOptions& options) : env(env_), sessionOptions(options), session(env_, model_path, options) {
 	dump();
 }
-OnnxDetector::OnnxDetector(Ort::Env& env_, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options) : env(env_),
+OnnxDetector::OnnxDetector(Ort::Env& env_, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options) : env(env_),sessionOptions(options), 
 session(env_, model_data, model_data_length, options)
 {
 	dump();
@@ -55,9 +55,24 @@ void OnnxDetector::dump() const {
 	std::cout << "Output Type: " << outputType << std::endl;
 	std::vector<int64_t> outputDims = outputTensorInfo.GetShape();//1 25200 41
 #ifdef _DEBUG
-	assert(outputDims.size() == 3);
-	assert(outputDims[0] == 1);
-	assert(outputDims[2] == 103);// 0,1,2,3 ->box,4->confidence，1 -> output classes = 36 characters+pays 61 + 1 vehicle= 98 classes =4+1+36+61+1=103
+	if (std::string(outputName) == "modelOutput" && std::string(inputName) == "modelInput"
+		|| std::string(outputName) == "platesTypeOutput" && std::string(inputName) == "inputImage") {
+		assert(inputDims.size() == 4);
+		assert(inputDims[0] == 1);
+		assert(inputDims[1] == 3);
+		assert(inputDims[2] == 80);
+		assert(inputDims[3] == 200);
+		for (size_t i = 0; i < inputDims.size(); i++)
+			std::cout << inputDims[i] << std::endl;
+		assert(outputDims.size() == 2);
+		assert(outputDims[0] == 1);
+		assert(outputDims[1] == 502);//502 types of lps
+	}
+	else {
+		assert(outputDims.size() == 3);
+		assert(outputDims[0] == 1);
+		assert(outputDims[2] == 103);// 0,1,2,3 ->box,4->confidence，1 -> output classes = 36 characters+pays 61 + 1 vehicle= 98 classes =4+1+36+61+1=103
+	}
 #endif //_DEBUG
 	std::cout << "Output Dimensions: " << std::endl;
 	for (size_t i = 0; i < outputDims.size(); i++)
@@ -195,7 +210,6 @@ OnnxDetector::Run(const cv::Mat& img, float conf_threshold, float iou_threshold,
 			classesId.push_back(it->class_idx);
 			it++;
 		}
-		//show_boxes(img, true_boxes, classesId);
 #endif //_DEBUG
 		return detections;
 	}
@@ -307,6 +321,7 @@ OnnxDetector::Run(const cv::Mat& img
 	}
 	return result;
 }
+//non max suppession algorithm to select boxes
 void nms(const std::vector<cv::Rect>& srcRects, std::vector<cv::Rect>& resRects, std::vector<int>& resIndexs, float thresh) {
 	resRects.clear();
 	const size_t size = srcRects.size();

@@ -27,7 +27,10 @@ GNU General Public License for more details.
 #include <functional>
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
-#include <cuda_provider_factory.h>
+#ifdef LPR_EDITOR_USE_CUDA
+#include <cuda_provider_factory.h> //needed in onnx version 1.8.1 not needed in onnx version 1.10.0
+//include <cpu_provider_factory.h>
+#endif //LPR_EDITOR_USE_CUDA
 #include "utils_anpr_detect.h"
 class OnnxDetector {
 public:
@@ -61,15 +64,19 @@ public:
    * @return the maximum size of input image (ie width or height of dnn input layer)
    */
     int64_t max_image_size() const;
+    bool is_valid() const {
+        return (session.GetInputCount() > 0 && session.GetOutputCount() > 0);
+    }
 protected:
-    Ort::SessionOptions sessionOptions;
+    //session options are created outside the class. The classifier access to its options through a constant reference
+    const Ort::SessionOptions & sessionOptions;
     Ort::Session session;
+    //ONNX environment are created outside the class. The classifier access to its envirponment through a constant reference
     const Ort::Env& env;
-#ifdef LPR_EDITOR_USE_CUDA
-    bool useCUDA;
-#endif //LPR_EDITOR_USE_CUDA
 };
+//non max suppession algorithm to select boxes
 void nms(const std::vector<cv::Rect>& srcRects, std::vector<cv::Rect>& resRects, std::vector<int>& resIndexs, float thresh);
+//standard scalar product
 template <typename T>
 T vectorProduct(const std::vector<T>& v)
 {

@@ -105,3 +105,91 @@ void C_Line::reset()
 {
 a=0.0f;b=0.0f;
 }
+float C_Line::dist_y(const cv::Point& pt) const
+{
+	//true if the line doesnot have too large slope and not large ordonnee a l'origine
+	if (is_valid()) {
+		return float(fabsf(pt.y - a * (float)pt.x - b));
+	}
+	else return .0f;
+}
+float C_Line::dist_y(const cv::Point2f& pt) const
+{
+	//true if the line doesnot have too large slope and not large ordonnee a l'origine
+	if (is_valid()) {
+		return float(fabsf(pt.y - a * (float)pt.x - b));
+	}
+	else return .0f;
+}
+//retourne la distance du point 
+// sa projection verticale de la droite
+float C_Line::difference_y(const cv::Point2f& pt) const
+{
+	return float((pt.y - a * pt.x - b));
+}
+//returns the distance of the center point of a box from its vertical projection on the line
+float C_Line::dist_y_from_center(const cv::Rect& box) const
+{
+	cv::Point2f pt(box.x + box.width / 2.0f, box.y + box.height / 2.0f);
+	return dist_y(pt);
+}
+float C_Line::difference_y_from_center(const cv::Rect& box) const
+{
+	cv::Point2f pt(box.x + box.width / 2.0f, box.y + box.height / 2.0f);
+	return difference_y(pt);
+}
+float C_Line::dist_y_from_center(const std::list<cv::Rect>& boxes) const
+{
+	float dist = 0.0f;
+	std::list<cv::Rect>::const_iterator it(boxes.begin());
+	while (it != boxes.end()) {
+		dist += dist_y_from_center(*it);
+		it++;
+	}
+	return dist;
+}
+float C_Line::difference_y_from_center(const std::list<cv::Rect>& boxes) const
+{
+	float dist = 0.0f;
+	std::list<cv::Rect>::const_iterator it(boxes.begin());
+	while (it != boxes.end()) {
+		dist += difference_y_from_center(*it);
+		it++;
+	}
+	return dist;
+}
+//returns sum of distances of a list of points from their vertical projections on the line
+float C_Line::dist_y(const std::list<cv::Point2f>& points) const
+{
+	float dist = 0.0f;
+	std::list<cv::Point2f>::const_iterator it(points.begin());
+	while (it != points.end()) {
+		dist += dist_y(*it);
+		it++;
+	}
+	return dist;
+}
+float C_Line::dist_y(const std::list<cv::Point>& points) const
+{
+	float dist = 0.0f;
+	std::list<cv::Point>::const_iterator it(points.begin());
+	while (it != points.end()) {
+		dist += dist_y(*it);
+		it++;
+	}
+	return dist;
+}
+float C_Line::error(const std::list<cv::Rect>& boxes) const
+{
+	if (boxes.size()) {
+		return dist_y_from_center(boxes) / ((float)boxes.size());
+	}
+	else return 0.0f;
+}
+float C_Line::error(const std::list<cv::Point2f>& points) const
+{
+	if (points.size()) {
+		return dist_y(points) / ((float)points.size());
+	}
+	else return 0.0f;
+}

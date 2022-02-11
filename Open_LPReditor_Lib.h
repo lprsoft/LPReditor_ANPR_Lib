@@ -50,11 +50,22 @@ extern "C"
 		@return the id of the new detector
 		@see
 		*/
-	size_t init_detector(size_t len, const char* model_file);
-
+	size_t init_yolo_detector(size_t len, const char* model_file);
+	/**
+		@brief initializes a new plates type classifier by loading its model file and returns its unique id
+		@param model_file : c string model filename (must be allocated by the calling program)
+		@param len : length of the model filename
+		@return the id of the new detector
+		@see
+		*/
+#ifdef _WINDOWS
+	__declspec(dllimport)
+#else //_WINDOWS
+#endif //_WINDOWS
+		size_t init_plates_classifer(size_t len_models_filename, const char* model_file, size_t len_labels_filename, const char* labels_file);
 	/**
 		@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
-	please make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function (see sample_cpp for uses examples).
+	please make sure you have initialized the lpreditor_anpr_global_view model in the init_yolo_detector function (see sample_cpp for uses examples).
 	@param width : width of source image
 		@param width : width of source image
 		@param height : height of source image
@@ -62,8 +73,8 @@ extern "C"
 		@param *pbData : source image bytes buffer
 		@param step Number of bytes each matrix row occupies. The value should include the padding bytes at
 			the end of each row, if any..See sample_cpp for a use case.
-@param id_global_view : unique id to a model initialized in init_detector function. See init_detector function.
-@param id_focused_on_lp : unique id to a model initialized in init_detector function. See init_detector function.
+@param id_global_view : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
+@param id_focused_on_lp : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
 @param lpn_len : length of the preallocated c string to store the resulting license plate number.
 @param lpn : the resulting license plate number as a c string, allocated by the calling program.
 		@return
@@ -73,28 +84,26 @@ extern "C"
 	__declspec(dllimport)
 #else //_WINDOWS
 #endif //_WINDOWS
-	bool detect_with_lpn_detection
+	bool two_stage_lpr
 	(const int width,//width of image
 		const int height,//height of image i.e. the specified dimensions of the image
 		const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
 		void* pbData,
 		size_t step// source image bytes buffer
 		, size_t id_global_view, size_t id_focused_on_lp, size_t lpn_len, char* lpn);
-
-#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
-
-	/**
-		@brief detect lpn in frame. this function is equivalent to detect_with_lpn_detection (same result and same arguments).
-		It uses just one model instead of two if you opt for detect_with_lpn_detection.
-		The repo comes with two models namely lpreditor_anpr_focused_on_lp and lpreditor_anpr_global_view.
-		If you use this function, make sure you have initialized the lpreditor_anpr_global_view model in the init_detector function. (see sample_cpp for uses examples).
+/**
+		@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
+	please make sure you have initialized the lpreditor_anpr_global_view model in the init_yolo_detector function (see sample_cpp for uses examples).
+	@param width : width of source image
 		@param width : width of source image
 		@param height : height of source image
 		@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
 		@param *pbData : source image bytes buffer
 		@param step Number of bytes each matrix row occupies. The value should include the padding bytes at
 			the end of each row, if any..See sample_cpp for a use case.
-@param id: unique id to a model initialized in init_detector function. See init_detector function.
+@param id_global_view : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
+@param id_focused_on_lp : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
+@param id_plates_types_classifier : unique id to a model initialized in init_plates_classifer function. See init_plates_classifer function.
 @param lpn_len : length of the preallocated c string to store the resulting license plate number.
 @param lpn : the resulting license plate number as a c string, allocated by the calling program.
 		@return
@@ -104,13 +113,12 @@ extern "C"
 	__declspec(dllimport)
 #else //_WINDOWS
 #endif //_WINDOWS
-	bool detect_without_lpn_detection
+	bool two_stage_lpr_plates_type_detection
 	(const int width,//width of image
 		const int height,//height of image i.e. the specified dimensions of the image
 		const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
 		void* pbData, size_t step// source image bytes buffer
-		, size_t id, size_t lpn_len, char* lpn);
-#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
+		, size_t id_global_view, size_t id_focused_on_lp, size_t id_plates_types_classifier, size_t lpn_len, char* lpn);
 #ifdef _WINDOWS
 	__declspec(dllimport)
 #else //_WINDOWS
@@ -122,6 +130,17 @@ extern "C"
 		@see
 		*/
 	bool close_detector(size_t id);
+#ifdef _WINDOWS
+	__declspec(dllimport)
+#else //_WINDOWS
+#endif //_WINDOWS
+	/**
+		@brief call this func once you have finished with the classifier --> to free heap allocated memeory
+		@param id : unique interger to identify the classifier to be freed
+		@return true upon success
+		@see
+		*/
+	bool close_plates_types_classifier(size_t id);
 #ifdef __cplusplus
 }
 #endif

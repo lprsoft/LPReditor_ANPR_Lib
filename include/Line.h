@@ -22,10 +22,46 @@ GNU General Public License for more details.
 #ifdef _DEBUG
 #include <assert.h>
 #endif //_DEBUG
+//**************************
+//   conversion between number types
+//**************************
+inline  float  doubleToFloat(const double& value)
+{
+#ifdef LPR_PRINTF
+	if ((value > FLT_MAX) || (value < -FLT_MAX))
+	{
+		printf("Probleme de depassement lors d'un cast de DOUBLE en FLOAT\n");
+	}
+#endif
+	return (float)value;
+}
+inline float intToFloat(int value)
+{
+	return float(value);
+}
+inline  float  int64ToFloat(const int64_t& value)
+{
+	return float(value);
+}
+inline  int  floatToInt(float value)
+{
+#ifdef LPR_PRINTF
+	if ((value > INT_MAX) || (value < -INT_MAX))
+	{
+		printf("Probleme de depassement lors d'un cast de float en int\n");
+	}
+#endif //LPR_PRINTF
+	return int(value);
+}
+/// \brief une classe qui modelise une droite dans un repere, donn�e par son ordonn�e � l'origine et sa pente
+/*! \class C_OCROutput
+* \brief a class that models a line in a frame, given by its intercept and its slope
+**
+*/
 class C_Line  
 {
 public:
-	//ture if the line doesnot have too large slope and not large ordonnee a l'origine
+	//true if the line doesnot have too large slope and not large ordonnee a l'origine
 	inline	bool is_valid() const
 	{
 		return (fabsf(a)<FLT_MAX && fabsf(b)<FLT_MAX);
@@ -61,7 +97,7 @@ public:
 		return (l.get_skew_angle()- atanf(a));
 	};
 	/**
-	@brief cette fonction donne l'angle de l'inclinaison d'un charactere
+	@brief cette fonction donne l'angle de l'inclinaison d'un caractere
 	cette fonction sert  effectueer une correction de l'inclinaison des characteres
 	cette fonction est utilise apres rotation de l'image de la plaque. Elle doit d'abord dterminer 
 	si les characteres ainsi reforms prsentent un angle de slant.
@@ -121,7 +157,7 @@ public:
 		if(fabsf(a)>FLT_EPSILON) return false;
 		else return(fabsf(b)<FLT_EPSILON);
 	};
-	//l'ordonnee  l'origine
+	//l'ordonnee a l'origine
 	float b;
 	//le coefficient directeur
 	float a;
@@ -129,9 +165,6 @@ public:
 	//   construct/destruct
 	//**************************
 	C_Line();
-	//////////////////////////////////////////////////////////////////////
-	// Construction/Destruction
-	//////////////////////////////////////////////////////////////////////
 	C_Line(const C_Line & line_);
 	C_Line(const float & a_,const float & b_);
 	C_Line(const cv::Point2f& A, const cv::Point2f& B);
@@ -144,8 +177,29 @@ public:
 		return(fabsf(a)<FLT_EPSILON);
 	};
 	bool is_nearly_the_same(const C_Line & right_op) const;
+	//returns the distance (positive or negative) of the point from its vertical projection on the line
+	float difference_y(const cv::Point2f& pt) const;
+	//retourne la distance du point a sa projection verticale sur la droite
+	float dist_y(const cv::Point& pt) const;
+	//returns the distance of the point from its vertical projection on the line
+	float dist_y(const cv::Point2f& pt) const;
+	//returns sum of distances of a list of points from their vertical projections on the line
+	float dist_y(const std::list<cv::Point2f>& points) const;
+	//returns the distance of the center point of a box from its vertical projection on the line
+	float dist_y_from_center(const cv::Rect& box) const;
+	//returns sum of distances of the center points of a list of boxes,from their vertical projections on the line
+	float dist_y_from_center(const std::list<cv::Rect>& boxes) const;
+	//returns sum of distances (which can be positive or negative) of the center points of a list of boxes,from their vertical projections on the line
+	float difference_y_from_center(const std::list<cv::Rect>& boxes) const;
+	//returns the distance (which can be positive or negative) of the center point of a box from its vertical projection on the line
+	float difference_y_from_center(const cv::Rect& box) const;
+	float dist_y(const std::list<cv::Point>& points) const;
+	//returns average distance of the center points of a list of boxes,from their vertical projections on the line
+	float error(const std::list<cv::Rect>& boxes) const;
+	//returns average distance of a list of points from their vertical projections on the line
+	float error(const std::list<cv::Point2f>& points) const;
 protected:
+	//true if the line is nearly horizontal
 	bool is_nearly_horiz() const;
 };
 #endif // !defined(AFX_LINE_H__E3A0AA20_F151_11D5_B96A_CCFB30288840__INCLUDED_)
-

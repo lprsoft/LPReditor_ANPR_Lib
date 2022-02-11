@@ -38,31 +38,6 @@ struct LPN_signature {
 	int nb_caracs_on_second_line;
 	int nb_caracs_on_third_line;
 };
-/**
-		@brief
-		//return the ascii character that corresponds to index class output by the dnn
-			@param classe : integer index = class identifier, output by the object detection dnn
-			@return an ascii character
-			@see
-			*/
-			//char get_char(const int classe);
-			/**
-					@brief
-					//checks if the characters contained in lpn are compatible with the alphabet
-						@param lpn: the registration of the vehicle as a string
-						@return
-						@see
-						*/
-						//bool could_be_lpn(const std::string& lpn);
-						/**
-								@brief
-								returns the true license plate number out of a filename
-								you must place the true license plate number in the image filename this way : number+underscore+license plate number,
-								for instance filename 0000000001_3065WWA34.jpg will be interpreted as an image with the license plate 3065WWA34 in it.
-									@param filename: the image filename that contains in it the true registration number
-									@return the lpn contained in the image filename
-									@see
-									*/
 									//std::string getTrueLPN(const std::string& filename, const bool& vrai_lpn_after_underscore);
 									/**
 											@brief
@@ -190,12 +165,34 @@ void is_bi_level_plate(const std::list<cv::Rect>& boxes, const std::list<float>&
 	std::list<cv::Rect>& l_reordered, std::list<float>& l_reordered_confidences, std::list<int>& l_reordered_classIds, std::list<int>& levels);
 /**
 		@brief
+//characters on a license plate can be disposed on two lines (bi level) or on just one unique line (single level).
+//anycase the ascii characters and there bouding boxes must nbe ordered in the inthe same way of the registration ascii chain.
+			@param[in] boxes : set of detected boxes
+			@param[in] l_classIds : classes indeces of detected boxes.
+@param[out] l_reordered : std list of the detected boxes when they are rearranged in the order of the registration string
+			@param[out] l_reordered_classIds : classes indeces of the above boxes.
+@param[out] levels : levels are int that indicates on which line of the license plate the box lies : -1 = upper line, +1 = lower line, 0 if the license plate have just one line
+			@return void
+			@see
+			*/
+void is_bi_level_plate(const std::list<cv::Rect>& boxes, const std::list<int>& l_classIds,
+	std::list<cv::Rect>& l_reordered, std::list<int>& l_reordered_classIds, std::list<int>& levels);
+//returns true if we can merge two list of characters bounding boxes on a single row
+bool merge_is_acceptable(const std::list<cv::Rect>& boxes_on_one_line, const std::list<cv::Rect>& boxes_on_another_line);
+/**
+		@brief
 		//checks if the character of the lpn is a digit or a letter or something else (by ex examples misread carac or license plate bounding box, ...)
 		*  @param[in]  input : a character (of the license plate).
 			@return 1 if the carac is a digit (0...9), 0 if the carac is a letter (A,B,...,Z), -1 else
 			@see
 			*/
 int is_digit(const char input);
+//removes from lists every box which id doenot correspond to a lp character
+void filter_out_everything_but_characters(std::list<cv::Rect>& boxes,
+	std::list<int>& l_classIds);
+//removes from lists every box which id doenot correspond to a lp character
+void filter_out_everything_but_characters(std::list<cv::Rect>& boxes,
+	std::list<float>& l_confidences, std::list<int>& l_classIds);
 /**
 		@brief
 //the dnn has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number.
@@ -334,7 +331,8 @@ void group_characters_in_the_same_license_plate(
 //the dnn has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number.
 //it can deal with license pates that have two lines of charcaters
 //output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
+//and remaining elements are characters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 			@param[in] boxes : set of detected boxes
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
@@ -372,6 +370,7 @@ float get_average_confidence_of_license_plate(const std::list<int>& classIds,
 /**
 		@brief
 		For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+		//Uses double linked lists : inside list is for characters and outside list is for plates.
 			@param[in] boxes : set of detected boxes
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
@@ -512,7 +511,7 @@ std::string get_best_lpn(
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
 			@param[out] tri_left_vect_of_detected_boxes :set of detected boxes when they rearranged from left to right
-			@param[out] tri_left_confidences : confidences corresponding detected boxes
+			@param[out] tri_left_confidences : confidences of corresponding detected boxes
 			@param[out] tri_left_classIds : set of indeces of the above detected boxes
 			@param[in] nmsThreshold A threshold used in non maximum suppression.
 @param[in] classId_last_country : is the class index of the last country in the list of detected classes.
@@ -527,6 +526,26 @@ std::string get_best_lpn(
 	std::vector<float>& tri_left_confidences, std::vector<int>& tri_left_classIds, const float nmsThreshold = 0.5f, const int classId_last_country =//95
 	96
 );
+/**
+		@brief
+//the dnn has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number.
+//it can deal with license pates that have two lines of charcaters
+			@param[in] one_lp : set of detected boxes
+			@param[in] confidence_one_lp : confidences of each bb detected by the dnn
+			@param[in] classIds_one_lp : set of indeces that indicate the classes of each of these detected boxes
+			@param[out] tri_left_vect_of_detected_boxes :set of detected boxes when they rearranged from left to right
+			@param[out] tri_left_confidences : confidences corresponding detected boxes
+			@param[out] tri_left_classIds : set of indeces of the above detected boxes
+			@param[in] nmsThreshold A threshold used in non maximum suppression.
+@param[in] classId_last_country : is the class index of the last country in the list of detected classes.
+@return the lpn extracted out of detections
+			@see
+			*/
+void get_best_lpn(const std::list<cv::Rect>& one_lp, const std::list<float>& confidence_one_lp, const std::list<int>& classIds_one_lp,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes);
 //we know the true license plate number that come from a training image and we want to find the detections boxes to aautomatically annotate the image.
 //We also have run the nn that produces detections, the goal of this func is to find the detections that are closest to the true lpn
 /**
@@ -643,7 +662,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 /**
 		@brief
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 			@param[in] boxes : set of detected boxes
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
@@ -673,7 +693,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 /**
 		@brief
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 			@param[in] boxes : set of detected boxes
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
@@ -702,7 +723,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 /**
 		@brief
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 			@param[in] boxes : set of detected boxes
 			@param[in] confidences : confidences of each bb detected by the dnn
 			@param[in] classIds : set of indeces that indicate the classes of each of these detected boxes
@@ -791,4 +813,11 @@ std::vector<std::vector<Detection>> PostProcessing(
 void filter_iou(std::vector<int>& classIds,
 	std::vector<float>& confidences,
 	std::vector<cv::Rect>& vect_of_detected_boxes, const float& nmsThreshold = 0.5f);
+bool plates_types_differ_with_one_character(const std::string& type1, std::string& lpn
+	, const std::string& type2);
+//this func extract all info from the filenames of the platesmania dataset :
+std::string get_plate_sub_type(const std::string& lpn);
+//this func extract all info from the filenames of the platesmania dataset :
+std::string get_plate_sub_type(const std::list<char>& lpn);
+std::vector<std::string> get_plates_types_labels(const std::string& filename);
 #endif // !defined(UTILS_ANPR_ONNX_H)

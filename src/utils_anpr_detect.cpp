@@ -18,6 +18,8 @@ GNU General Public License for more details.
 #include "../include/utils_image_file.h"
 #include"../include/utils_opencv.h"
 #include <filesystem>
+#include <iostream>     // std::cout
+#include <fstream>
 #define NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE 36
 #define NUMBER_OF_COUNTRIES 61
 //returns the iou (intersection over union) of two boxes
@@ -357,6 +359,202 @@ void filtre_grubbs_sides(const std::list<cv::Rect>& boxes, std::list<float>& ang
 		mean_produit_interdistance_avec_angle = somme_produit_interdistance_avec_angle / (interdistances.size());
 	}
 }
+//retourne la liste forme de centres des ROI
+					 //characters on a license plate can be disposed on two lines (bi level) or on just one unique line (single level).
+					 //anycase the ascii characters and there bouding boxes must nbe ordered in the inthe same way of the registration ascii chain.
+void is_bi_level_plate(const std::list<cv::Rect>& boxes, const std::list<int>& l_classIds,
+	std::list<cv::Rect>& l_reordered, std::list<int>& l_reordered_classIds, std::list<int>& levels)
+{//tous les characteres encore disponibles
+	//initialisation des sommes partielles
+	if (boxes.size() > 1) {
+		//cette fonction trie la liste de gauche a droite 
+		std::copy(boxes.begin(), boxes.end(), std::back_inserter(l_reordered));
+		std::copy(l_classIds.begin(), l_classIds.end(), std::back_inserter(l_reordered_classIds));
+		//***************************************************
+		//                  FILTER
+		//***************************************************
+		filter_out_everything_but_characters(l_reordered,
+			l_reordered_classIds);
+		sort_from_left_to_right(l_reordered, l_reordered_classIds);
+		//la difference des angles des n-1 premiers characteres par rapport l'horizontale
+							//l'interdistance de chaque caractere avec son suivant pour les n-1 premiers characteres
+		std::list<float> angles_with_horizontal_line;
+		float mean_angles_par_rapport_horiz;
+		float standard_deviation_consecutives_angles;
+		std::list<int> interdistances;
+		float mean_interdistances;
+		float standard_deviation_interdistances;
+		float mean_produit_des_2; float standard_deviation_produit_des_2;
+		filtre_grubbs_sides(l_reordered, angles_with_horizontal_line,
+			mean_angles_par_rapport_horiz, standard_deviation_consecutives_angles, interdistances,
+			mean_interdistances, standard_deviation_interdistances, mean_produit_des_2,
+			standard_deviation_produit_des_2);
+		if (standard_deviation_consecutives_angles < 0.0f || standard_deviation_interdistances < 0.0f || standard_deviation_produit_des_2 < 0.0f) {
+			levels = std::list<int>(l_reordered.size(), 0);
+		}
+		else {
+			std::list<cv::Rect>::const_iterator it = l_reordered.begin();
+			std::list<float>::const_iterator it_angles(angles_with_horizontal_line.begin());
+			while (it_angles != angles_with_horizontal_line.end() && it != l_reordered.end()) {
+				if (fabs(*it_angles) > 0.785398f) {
+					//3.141593/4 pi/4
+					if (levels.size()) {
+						std::list<cv::Rect>::const_iterator it_next = it;
+						it_next++;
+						cv::Rect box_left(*it);
+						cv::Rect box_right(*it_next);
+#ifdef _DEBUG		
+						////assert(iou(box_left, box_right) < 0.54);
+#endif //_DEBUG
+						if (2 * box_left.y + box_left.height < 2 * box_right.y + box_right.height) {
+							//in this case box_left is on first line and box_right is on second line
+							std::list<int>::reverse_iterator it_levels(levels.rbegin());
+							while (it_levels != levels.rend()) {
+								if (*it_levels == 0) {
+									*it_levels = -1;
+									it_levels++;
+								}
+								else break;
+							}
+							if ((levels.back() == 1 || levels.back() == 0) && it_angles != angles_with_horizontal_line.begin()) {
+								std::list<float>::const_iterator it_angles_pred(it_angles); it_angles_pred--;
+								if (fabs(*it_angles_pred) < fabs(*it_angles)) {
+									levels.back() = -1;
+								}
+							}
+							levels.push_back(1);
+						}
+						else {
+							std::list<int>::reverse_iterator it_levels(levels.rbegin());
+							while (it_levels != levels.rend()) {
+								if (*it_levels == 0) {
+									*it_levels = 1;
+									it_levels++;
+								}
+								else break;
+							}
+							if ((levels.back() == -1 || levels.back() == 0) && it_angles != angles_with_horizontal_line.begin()) {
+								std::list<float>::const_iterator it_angles_pred(it_angles); it_angles_pred--;
+								if (fabs(*it_angles_pred) < fabs(*it_angles)) {
+									levels.back() = 1;
+								}
+							}
+							//in this case box_right is on first line and box_left is on second line
+							levels.push_back(-1);
+						}
+					}
+					else {
+						std::list<cv::Rect>::const_iterator it_next = it;
+						it_next++;
+						cv::Rect box_left(*it);
+						cv::Rect box_right(*it_next);
+#ifdef _DEBUG		
+						//assert(iou(box_left, box_right) < 0.54);
+#endif //_DEBUG
+						if (2 * box_left.y + box_left.height < 2 * box_right.y + box_right.height) {
+							//in this case box_left is on first line and box_right is on second line
+							levels.push_back(-1);
+							levels.push_back(1);
+						}
+						else {
+							//in this case box_right is on first line and box_left is on second line
+							levels.push_back(1);
+							levels.push_back(-1);
+						}
+					}
+				}
+				else {
+					//3.141593/4 pi/4
+					if (levels.size()) {
+						levels.push_back(levels.back());
+					}
+					else {
+						//in this case box_right is on first line and box_left is on second line
+						levels.push_back(0);
+						levels.push_back(levels.back());
+					}
+				}
+				it++;
+				it_angles++;
+			}
+#ifdef _DEBUG		
+			assert(levels.size() == angles_with_horizontal_line.size() + 1 && levels.size() == l_reordered.size() && levels.size() == boxes.size());
+#endif //_DEBUG
+			//now
+			std::list<char> lpn_minus_1;
+			std::list<char> lpn_0;
+			std::list<char> lpn_plus_1;
+			//C_OCROutputs availableAlpha(LATIN_LETTERS_NO_I_O_LATIN_DIGITS);
+			std::list<int>::const_iterator it_levels(levels.begin());
+			std::list<cv::Rect>::const_iterator it_box(l_reordered.begin());//list of characters l_boxes ranged from left to right
+			std::list<int>::const_iterator it_out_classes(l_reordered_classIds.begin());
+			std::list<cv::Rect> l_minus_1;//list of characters l_boxes ranged from left to right
+			std::list<cv::Rect> l_0;//list of characters l_boxes ranged from left to right
+			std::list<cv::Rect> l_plus_1;//list of characters l_boxes ranged from left to right
+			while (it_out_classes != l_reordered_classIds.end() && it_levels != levels.end() &&
+				it_box != l_reordered.end()) {
+				if (*it_out_classes < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE //- 1
+					) {
+					if (*it_levels == -1) {
+						lpn_minus_1.push_back(get_char(*it_out_classes));
+						l_minus_1.push_back(*it_box);//list of characters l_boxes ranged from left to right
+					}
+					else {
+						if (*it_levels == 0) {
+							lpn_0.push_back(get_char(*it_out_classes));
+							l_0.push_back(*it_box);//list of characters l_boxes ranged from left to right
+						}
+						else if (*it_levels == 1) {
+							lpn_plus_1.push_back(get_char(*it_out_classes));
+							l_plus_1.push_back(*it_box);//list of characters l_boxes ranged from left to right
+						}
+					}
+				}
+				it_out_classes++; it_levels++; it_box++;
+			}
+			//returns true if we can merge two list of characters bounding boxes on a single row
+			if (merge_is_acceptable(l_0, l_plus_1) || merge_is_acceptable(l_minus_1, l_0) || merge_is_acceptable(l_minus_1, l_plus_1)) {
+				std::list<int>::iterator it_levels(levels.begin());
+				while (it_levels != levels.end()) {
+					*it_levels = 0;
+					it_levels++;
+				}
+			}
+		}
+	}
+}
+//returns true if we can merge two list of characters bounding boxes on a single row
+bool merge_is_acceptable(const std::list<cv::Rect>& boxes_on_one_line, const std::list<cv::Rect>& boxes_on_another_line)
+{//tous les characteres encore disponibles
+	//initialisation des sommes partielles
+	if (boxes_on_one_line.size() > 1 && boxes_on_another_line.size() > 1) {
+		C_Line line_sup_boxes_on_one_line; C_Line line_inf_boxes_on_one_line;
+		if (get_upperand_lower_lines
+		(boxes_on_one_line, line_sup_boxes_on_one_line, line_inf_boxes_on_one_line)) {
+			C_Line line_sup_boxes_on_another_line; C_Line line_inf_boxes_on_another_line;
+			if (get_upperand_lower_lines
+			(boxes_on_another_line, line_sup_boxes_on_another_line, line_inf_boxes_on_another_line)) {
+#ifdef _DEBUG		
+				float difference_y_from_center_debug = (line_sup_boxes_on_another_line.difference_y_from_center(boxes_on_one_line));
+				difference_y_from_center_debug = line_inf_boxes_on_another_line.difference_y_from_center(boxes_on_one_line);
+				difference_y_from_center_debug = line_sup_boxes_on_one_line.difference_y_from_center(boxes_on_another_line);
+				difference_y_from_center_debug = line_inf_boxes_on_one_line.difference_y_from_center(boxes_on_another_line);
+				difference_y_from_center_debug = get_median_height(boxes_on_one_line);
+				difference_y_from_center_debug = get_median_height(boxes_on_another_line);
+#endif //_DEBUG
+				float difference_y_from_center = ((line_sup_boxes_on_another_line.difference_y_from_center(boxes_on_one_line) +
+					line_inf_boxes_on_another_line.difference_y_from_center(boxes_on_one_line)) / (float)boxes_on_one_line.size()
+					-
+					(line_sup_boxes_on_one_line.difference_y_from_center(boxes_on_another_line) +
+						line_inf_boxes_on_one_line.difference_y_from_center(boxes_on_another_line)) / (float)boxes_on_another_line.size()) / 4.0f;
+				return (fabs(difference_y_from_center) < get_median_height(boxes_on_one_line) && fabs(difference_y_from_center) < get_median_height(boxes_on_another_line));
+			}
+			else return false;
+		}
+		else return false;
+	}
+	else return false;
+}
 //characters on a license plate can be disposed on two lines (bi level) or on just one unique line (single level).
 //anycase the ascii characters and there bouding boxes must nbe ordered in the inthe same way of the registration ascii chain.
 void is_bi_level_plate(const std::list<cv::Rect>& boxes, const std::list<float>& l_confidences, const std::list<int>& l_classIds,
@@ -369,7 +567,7 @@ void is_bi_level_plate(const std::list<cv::Rect>& boxes, const std::list<float>&
 		std::copy(l_classIds.begin(), l_classIds.end(), std::back_inserter(l_reordered_classIds));
 		sort_from_left_to_right(l_reordered, l_reordered_confidences, l_reordered_classIds);
 		//la difference des angles des n-1 premiers characteres par rapport l'horizontale
-							//l'interdistance de chaque charactere avec son suivant pour les n-1 premiers characteres
+							//l'interdistance de chaque caractere avec son suivant pour les n-1 premiers characteres
 		std::list<float> angles_par_rapport_horiz;
 		float moy_angles_par_rapport_horiz;
 		float ecart_type_angles_consecutifs;
@@ -515,6 +713,27 @@ int is_digit(const char input)
 	else return -1;
 }
 void filter_out_everything_but_characters(std::list<cv::Rect>& boxes,
+	std::list<int>& l_classIds)
+{
+	//***************************************************
+		//                  FILTER
+		//***************************************************
+	std::list<cv::Rect>::iterator it_boxes(boxes.begin());
+	std::list<int>::iterator it_out_classes(l_classIds.begin());
+	while (it_out_classes != l_classIds.end()
+		&& it_boxes != boxes.end()) {
+		if (!(*it_out_classes < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE //- 1 
+			&& *it_out_classes >= 0)) {
+			it_out_classes = l_classIds.erase(it_out_classes);
+			it_boxes = boxes.erase(it_boxes);
+		}
+		else {
+			it_out_classes++;
+			it_boxes++;
+		}
+	}
+}
+void filter_out_everything_but_characters(std::list<cv::Rect>& boxes,
 	std::list<float>& l_confidences, std::list<int>& l_classIds)
 {
 	//***************************************************
@@ -570,7 +789,8 @@ int is_this_box_a_character(const int classId, const int number_of_characters_la
 //it can deal with license pates that have two lines of charcaters
 //output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
-			//groups detected boxes that correspond to the same vehicle. The separation is based on raw detections of license plates from the dnn
+			//groups detected boxes that correspond to the same vehicle. The separation is based on raw detections of license plates from the dnn.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void group_characters_in_the_same_license_plate(
 	//raw detections
 	const std::vector<cv::Rect>& boxes,
@@ -1012,7 +1232,8 @@ void group_characters_in_the_same_license_plate(
 //the dnn has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number.
 //it can deal with license pates that have two lines of charcaters
 //output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
+//and remaining elements are characters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void group_characters_in_the_same_license_plate(
 	//raw detections
 	const std::list<cv::Rect>& boxes, const std::list<float>& confidences, const std::list<int>& classIds,
@@ -1397,6 +1618,7 @@ std::string get_lpn(
 		nmsThreshold);
 }
 //For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+//Uses double linked lists : inside list is for characters and outside list is for plates.
 void get_best_plate(
 	//detections when they are separated license plates by license plates
 	const std::list < std::vector<int>>& classIds, const std::list < std::vector<float>>& confidences, const std::list < std::vector<cv::Rect>>& boxes
@@ -1778,7 +2000,8 @@ float get_average_confidence_of_license_plate(const std::list<int>& classIds,
 }
 //
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void separate_license_plates_if_necessary_add_blank_vehicles(
 	//raw detections
 	const std::vector<cv::Rect>& boxes, const std::vector<float>& confidences, const std::vector<int>& classIds,
@@ -1847,7 +2070,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 #endif //_DEBUG
 }
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void separate_license_plates_if_necessary_add_blank_vehicles(
 	//raw detections
 	const std::vector<cv::Rect>& boxes, const std::vector<float>& confidences, const std::vector<int>& classIds,
@@ -1916,7 +2140,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 #endif //_DEBUG
 }
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void separate_license_plates_if_necessary_add_blank_vehicles(
 	//raw detections
 	const std::list<cv::Rect>& boxes, const std::list<float>& confidences, const std::list<int>& classIds,
@@ -1985,7 +2210,8 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 #endif //_DEBUG
 }
 //the dnn has detected boxes that represent characters of the license plate, this function now groups characters in the same license plate and then rearranged from left to right.
-//it can deal with license pates that have two lines of charcaters
+//it can deal with license pates that have two lines of charcaters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void separate_license_plates_if_necessary_add_blank_vehicles(
 	//raw detections
 	const std::list<cv::Rect>& boxes, const std::list<float>& confidences, const std::list<int>& classIds,
@@ -2028,29 +2254,26 @@ void separate_license_plates_if_necessary_add_blank_vehicles(
 		it_l_vect_of_classIds_in_a_license_plate++;
 	}
 }
-/*
 //the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number.
 //it can deal with license pates that have two lines of charcaters
 std::string get_lpn(const std::list<int>& l_classIds) {
 	std::string lpn;
-	C_OCROutputs availableAlpha(LATIN_LETTERS_LATIN_DIGITS);
 	std::list<int>::const_iterator it_out_classes(l_classIds.begin());
 	while (it_out_classes != l_classIds.end()) {
-		lpn += availableAlpha.get_char(*it_out_classes);
+		lpn += get_char(*it_out_classes);
 		it_out_classes++;
 	}
 	return lpn;
 }
 std::string get_lpn(const std::vector<int>& l_classIds) {
 	std::string lpn;
-	C_OCROutputs availableAlpha(LATIN_LETTERS_LATIN_DIGITS);
 	std::vector<int>::const_iterator it_out_classes(l_classIds.begin());
 	while (it_out_classes != l_classIds.end()) {
-		lpn += availableAlpha.get_char(*it_out_classes);
+		lpn += get_char(*it_out_classes);
 		it_out_classes++;
 	}
 	return lpn;
-}*/
+}
 //the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
 //it can deal with license pates that have two lines of charcaters
 std::string get_lpn(
@@ -2373,44 +2596,46 @@ std::string get_best_lpn(
 		);
 	}
 }
-/*
-//extracts, from a test directory, all images files
-void load_images_filenames(const std::string& dir, std::list<std::string>& image_filenames)
+void get_best_lpn(const std::list<cv::Rect>& one_lp, const std::list<float>& confidence_one_lp, const std::list<int>& classIds_one_lp,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes)
 {
-	std::filesystem::path p(dir);
-	std::vector<std::filesystem::directory_entry> v; // To save the file names in a vector.
-	if (is_directory(p))
-	{
-		const std::string dir_path = p.string();
-		std::filesystem::directory_iterator b(p), e;
-		for (auto i = b; i != e; ++i)
-		{
-			if (std::filesystem::is_regular_file(*i)) {
-				std::filesystem::path fe = i->path().extension();
-				std::string extension = fe.string();
-				if (extension == ".bmp" || extension == ".BMP" || extension == ".jpg" || extension == ".JPG" || extension == ".jpeg")
-				{
-					std::filesystem::path p_(i->path());
-					//if you want to select images that have the true license plate number in the image filename
-					const bool select_images_with_lpn = true;
-					if (select_images_with_lpn) {
-						bool vrai_lpn_after_underscore = true;
-						//returns the true license plate number out of a filename
-							//you must place the true license plate number in the image filename this way : number + underscore + license plate number,
-							//for instance filename 0000000001_3065WWA34.jpg will be interpreted as an image with the license plate 3065WWA34 in it.
-						std::string ExactLPN(getTrueLPN(p_.stem().string(), vrai_lpn_after_underscore));
-						if (ExactLPN.size() > 3 && ExactLPN.size() < 11) {
-							image_filenames.push_back(i->path().string());
-						}
-					}
-					else {//take all images files -- output stats impossible
-						image_filenames.push_back(i->path().string());
-					}
-				}
-			}
+	//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+	//it can deal with license pates that have two lines of charcaters
+	std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+	std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+	const float nmsThreshold_lpn = 0.5;
+	//rearange boxes from left to right
+	std::string lpn = get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp, tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+	std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+	std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+	std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+	while (it_out_classes_ != tri_left_classIds.end()
+		&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+		if (
+			(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+			(lpn.empty())
+			) {
+			//now we must change the coordinates of the box to fit global image
+			cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+			chosen_lp_boxes.push_back(box_in_global_image);
+			chosen_lp_classIds.push_back(*it_out_classes_);
+			chosen_lp_confidences.push_back(*it_confidences);
 		}
+		it_out_classes_++;
+		it_confidences++;
+		it_boxes++;
 	}
-}*/
+#ifdef _DEBUG
+	assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+	assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+	lpns.push_back(lpn);
+	lp_country_class.push_back(classIds_one_lp.front());
+	lp_rois.push_back(one_lp.front());
+}
 //Padded resize
 std::vector<float> LetterboxImage(const cv::Mat& src, cv::Mat& dst, const cv::Size& out_size) {
 	auto in_h = static_cast<float>(src.rows);
@@ -2579,25 +2804,6 @@ std::vector<std::vector<Detection>> PostProcessing(
 	detections.emplace_back(det_vec);
 	return detections;
 }
-/*
-void drawPred(int classId, int left, int top, int right, int bottom, cv::Mat& frame, const std::vector<std::string>& classes)
-{
-	cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 1);
-	std::string label;// = cv::format("%.2f", conf);
-	if (!classes.empty())
-	{
-		CV_Assert(classId < (int)classes.size());
-		label = classes[classId] //+ ": " + label
-			;
-	}
-	int baseLine;
-	cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-	top = cv::max(top, labelSize.height);
-	cv::rectangle(frame, cv::Point(left, top - labelSize.height), cv::Point(left + labelSize.width, top + baseLine), cv::Scalar::all(255), cv::FILLED);
-	cv::rectangle(frame, cv::Point(left, top - labelSize.height), cv::Point(left + labelSize.width, top + baseLine), cv::Scalar::all(255), cv::FILLED);
-	cv::putText(frame, label, cv::Point(left, top), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar());
-}
-*/
 //if two boxes have an iou (intersection over union) that is too large, then they cannot represent two adjacent characters of the license plate 
 //so we discard the one with the lowest confidence rate
 void filter_iou(std::vector<int>& classIds,
@@ -2625,4 +2831,87 @@ void filter_iou(std::vector<int>& classIds,
 		std::copy(l_confidences.begin(), l_confidences.end(), std::back_inserter(confidences));
 		std::copy(list_of_detected_boxes.begin(), list_of_detected_boxes.end(), std::back_inserter(vect_of_detected_boxes));
 	}
+}
+//this func extract all info from the filenames of the platesmania dataset :
+bool plates_types_differ_with_one_character(const std::string& type1, std::string& lpn
+	, const std::string& type2)
+{
+	if (type1.length() == type2.length() && type1.length() == lpn.length() && type1.length()) {
+		Levenshtein lev;
+		int editdistance = lev.Get(type1.c_str(), type1.length(), type2.c_str(), type2.length());
+		if (editdistance == 1) {
+			std::string::const_iterator it2(type2.begin());
+			std::string::const_iterator it1(type1.begin());
+			int index = 0;
+			while (it1 != type1.end() && it2 != type2.end())
+			{
+				if (*it2 != *it1) {
+					if (lpn[index] == 'O') {
+						lpn[index] = '0';
+						return true;
+					}
+					if (lpn[index] == '0') {
+						lpn[index] = 'O';
+						return true;
+					}
+					if (lpn[index] == 'B') {
+						lpn[index] = '8';
+						return true;
+					}
+					if (lpn[index] == '8') {
+						lpn[index] = 'B';
+						return true;
+					}
+				}
+				it1++;
+				it2++;
+				index++;
+			}
+			return false;
+		}
+		else return false;
+	}
+	else return false;
+}
+//this func extract all info from the filenames of the platesmania dataset :
+std::string get_plate_sub_type(const std::string& lpn)
+{
+	std::string sub_type;
+	std::string::const_iterator it(lpn.begin());
+	while (it != lpn.end()) {
+		if (is_digit(*it) == 1) { sub_type += 'D'; }
+		else if (is_digit(*it) == 0) { sub_type += 'L'; }
+		else if (is_digit(*it) == 2) {
+			if (*it == '0') sub_type += 'D';
+			else if (*it == 'O') sub_type += 'L';
+		}
+		it++;
+	}
+	return sub_type;
+}
+//this func extract all info from the filenames of the platesmania dataset :
+std::string get_plate_sub_type(const std::list<char>& lpn)
+{
+	std::string sub_type;
+	std::list<char>::const_iterator it(lpn.begin());
+	while (it != lpn.end()) {
+		if (is_digit(*it) == 1) { sub_type += 'D'; }
+		else if (is_digit(*it) == 0) { sub_type += 'L'; }
+		else if (is_digit(*it) == 2) {
+			if (*it == '0') sub_type += 'D';
+			else if (*it == 'O') sub_type += 'L';
+		}
+		it++;
+	}
+	return sub_type;
+}
+std::vector<std::string> get_plates_types_labels(const std::string& filename) {
+	std::ifstream ifs(filename.c_str());
+	std::string line;
+	std::vector<std::string> labels;
+	while (std::getline(ifs, line))
+	{
+		labels.push_back(line);
+	}
+	return labels;
 }

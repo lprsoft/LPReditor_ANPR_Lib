@@ -3,6 +3,7 @@
 #include "Line.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/text.hpp>
+#define cvGetSeqElemLPR( param1, param2, param3) cvGetSeqElem( param1, param2)
 /**
 	@brief 
 	//for each box in the container, check that it is nearly entirely contained in the second argument
@@ -146,13 +147,14 @@ struct MSERParams
 	double minMargin;
 	int edgeBlurSize;
 };
+/*
 bool trouve_la_plaque(const cv::Mat& frame
 	, cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
 	cv::Point& top_left_,
 	cv::Point& top_right_,
 	cv::Point& bottom_right_,
 	cv::Point& bottom_left_,
-	cv::Rect& rect_OpenLP);
+	cv::Rect& rect_OpenLP);*/
 bool trouve_la_plaque(const cv::Mat& frame, const cv::Rect& global_rect
 	, cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
 	cv::Point& top_left_,
@@ -172,5 +174,200 @@ cv::Rect get_global_rect(const std::vector<cv::Rect>& l);
 void vector_to_list(
 	const std::vector<cv::Rect>& boxes,
 	std::list<cv::Rect>& lboxes);
+bool trouve_la_plaque(const cv::Mat& frame, const cv::Rect& global_rect
+	, cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_,
+	cv::Rect& rect_OpenLP);
+bool trouve_la_plaque(const cv::Mat& frame,
+	const std::list<int>& classes, const std::list<cv::Rect>& boxes
+	,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_, cv::Rect& rect_OpenLP);
+bool in_quadrilatere(const cv::Point& pt,
+	const cv::Point& top_left, const cv::Point& top_right, const cv::Point& bottom_right, const cv::Point& bottom_left, const float& signed_distance);
+bool in_quadrilatere(const cv::Point& pt, const std::vector<cv::Point >& contours, const float& signed_distance);
+bool in_quadrilatere(const cv::Rect& box, const std::vector<cv::Point >& contours, const float& signed_distance);
+bool in_quadrilatere(const std::list<cv::Rect>& boxes, const std::vector<cv::Point >& contours, const float& signed_distance);
+#include "opencv2/imgproc/imgproc_c.h"
+float cosine(const CvPoint& pt1, const CvPoint& pt2, const CvPoint& pt0);
+float cosine(const CvPoint* pt1, const CvPoint* pt2, const CvPoint* summit);
+bool is_2D(const CvSeq* polygone);
+int zappeUnPoint(const CvSeq* polygone, CvMemStorage* storage);
+float dist(const CvPoint& pt1, const CvPoint& pt2);
+CvPoint moyennepond(const CvPoint& pt1, const CvPoint& pt2, const int a1, const int a2);
+CvPoint moyenne(const CvPoint& pt1, const CvPoint& pt2);
+CvPoint moyenne4(const CvPoint& pt1, const CvPoint& pt2, const CvPoint& pt3, const CvPoint& pt4);
+CvPoint trouveleplusproche(const CvPoint& ref, const CvPoint& pt1,
+	const CvPoint& pt2, const CvPoint& pt3, const CvPoint& pt4);
+CvSeq* sort(const CvSeq* note, CvMemStorage* storage);
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+// renvoie une seuence de 4 points encadrant la plaque
+// trouveesur l'image img
+// IplImage* img
+// CvMemStorage* storage 
+//peut traiter les images sources couleur ou en niveaux de gris
+CvSeq* findSquares4(IplImage* img, CvMemStorage* storage, const int nTresh, //
+					//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int nb_composantes_color, const int dist_min_bord,
+	const int hauteur_plaque_min, const float& rapport_largeur_sur_hauteur_min);
+CvSeq* findSquares4
+(IplImage* im_src, const cv::Rect& global_rect, CvMemStorage* storage,
+	const int nTresh, const int mean_carac
+	, const int mean_fond, //
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+CvSeq* findSquares4
+(IplImage* im_src, CvMemStorage* storage,
+	const int nTresh, //
+	//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int nb_composantes_color,
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+// renvoie une seuence de 4 points encadrant la plaque
+// trouveesur l'image im_src
+// IplImage* im_src
+// CvMemStorage* storage 
+//peut traiter les images sources couleur ou en niveaux de gris
+CvSeq* findSquares4
+(IplImage* imgR, IplImage* imgG, IplImage* imgB, CvMemStorage* storage,
+	const int nTresh, //
+	//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+CvSeq* findSquares4_multiresolution
+(IplImage* im_src, CvMemStorage* storage,
+	const int nTresh, //
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+CvSeq* findSquares4_multiresolution(
+	IplImage* im_src, CvMemStorage* storage,
+	const int nTresh, const int mean_carac
+	, const int mean_fond, //
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+CvSeq* findSquares4_multiresolution
+(
+	IplImage* im_src, const cv::Rect& global_rect, CvMemStorage* storage,
+	const int nTresh, const int mean_carac
+	, const int mean_fond, //
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min
+);
+CvSeq* findSquares4_multiresolution
+(
+	IplImage* im_src, CvMemStorage* storage,
+	const int nTresh, //
+	//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int nb_composantes_color,
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min
+);
+CvSeq* findSquares4_multiresolution
+(IplImage* imgR, IplImage* imgG, IplImage* imgB, CvMemStorage* storage,
+	const int nTresh, //
+	//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+/*
+CvSeq* findSquares4
+(IplImage* imgR, IplImage* imgG, IplImage* imgB, CvMemStorage* storage,
+	const int nTresh, //
+	//le nb de composantes couleurs ex nb_composantes_color=3 pour une image RGB
+	const int dist_min_bord,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);*/
+//peut traiter les images sources couleur ou en niveaux de gris
+/*
+bool trouve_la_plaque(IplImage* etude, const int nTresh, const int nb_composantes_color,
+	int resultat[4][2], const int dist_min_bord,
+	const int hauteur_plaque_min, const float& rapport_largeur_sur_hauteur_min);*/
+///////////////////////////////////////////////////////////////////////////////////////////
+// retourne le nb de points en commun entre deux images
+float percentage_match(IplImage* img1, IplImage* img2);
+bool quadrilatere_is_convex(const cv::Point& pt0, const cv::Point& pt1, const cv::Point& pt2, const cv::Point& pt3);
+//must be convex quadrilatere
+bool width_is_larger(const cv::Point& pt0, const cv::Point& pt1, const cv::Point& pt2, const cv::Point& pt3);
+//must be convex quadrilatere
+bool get_corners(const cv::Point& pt0, const cv::Point& pt1, const cv::Point& pt2, const cv::Point& pt3,
+	cv::Point& top_left, cv::Point& top_right, cv::Point& bottom_right, cv::Point& bottom_left);
+//must be convex quadrilatere
+bool get_corners(const IplImage* im, const CvPoint& pt0, const CvPoint& pt1, const CvPoint& pt2, const CvPoint& pt3,
+	cv::Point& top_left, cv::Point& top_right, cv::Point& bottom_right, cv::Point& bottom_left);
+/*
+bool trouve_la_plaque(IplImage* etude, int nTresh,
+	cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_, cv::Rect& rect_OpenLP,
+	const int dist_min_bord
+	,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+//peut traiter les images sources couleur ou en niveaux de gris
+bool trouve_la_plaque(IplImage* etude, int nTresh
+	, const int mean_carac
+	, const int mean_fond,
+	cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_, cv::Rect& rect_OpenLP,
+	const int dist_min_bord
+	,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+*/
+//peut traiter les images sources couleur ou en niveaux de gris
+bool trouve_la_plaque(IplImage* etude, const cv::Rect& global_rect, int nTresh
+	, const int mean_carac
+	, const int mean_fond,
+	cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_, cv::Rect& rect_OpenLP,
+	const int dist_min_bord
+	,
+	const int hauteur_plaque_min,
+	const float& rapport_largeur_sur_hauteur_min);
+bool trouve_la_plaque(const cv::Mat& frame, const cv::Rect& global_rect
+	, cv::Point& p0, cv::Point& p1, cv::Point& p2, cv::Point& p3,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_,
+	cv::Rect& rect_OpenLP);
+bool trouve_la_plaque(const cv::Mat& frame,
+	const std::list<int>& classes, const std::list<cv::Rect>& boxes
+	,
+	cv::Point& top_left_,
+	cv::Point& top_right_,
+	cv::Point& bottom_right_,
+	cv::Point& bottom_left_, cv::Rect& rect_OpenLP);
+std::string get_plate_type(
+	const std::list<cv::Rect>& vect_of_detected_boxes,
+	const std::list<int>& classIds, const int number_of_characters_latin_numberplate
+);
+std::string get_plate_type(
+	const std::vector<cv::Rect>& vect_of_detected_boxes,
+	const std::vector<int>& classIds, const int number_of_characters_latin_numberplate
+);
 #endif // !defined UTILS_OPEN_CV
 #pragma once

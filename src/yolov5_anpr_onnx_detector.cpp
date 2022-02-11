@@ -20,6 +20,7 @@ GNU General Public License for more details.
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 #include "../include/utils_image_file.h"
+#include"utils_opencv.h"
 #define NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE 36
 #define NUMBER_OF_COUNTRIES 61
 //////////////////////////////////////////////////////////////////////
@@ -37,6 +38,7 @@ Yolov5_anpr_onxx_detector::~Yolov5_anpr_onxx_detector()
 {
 }
 //Given the @p input frame, create input blob, run net then, from result detections, assembly license plates present in the input image.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void Yolov5_anpr_onxx_detector::detect_with_different_confidences_then_separate_plates(const cv::Mat& frame, std::list<std::vector<int>>& classIds,
 	std::list < std::vector<float>>& confidences, std::list < std::vector<cv::Rect>>& boxes,
 	float nmsThreshold)
@@ -86,6 +88,7 @@ void Yolov5_anpr_onxx_detector::raw_detections_with_different_confidences(const 
 		it_detections_with_different_confidences++;
 	}
 }//Given the @p input frame, create input blob, run net then, from result detections, assembly license plates present in the input image.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void Yolov5_anpr_onxx_detector::detect_with_different_confidences_then_separate_plates(const cv::Mat& frame, std::list<std::vector<int>>& classIds,
 	std::list < std::vector<float>>& confidences, std::list < std::vector<cv::Rect>>& boxes,
 	std::list <std::list<std::string>>& lpns,
@@ -163,81 +166,6 @@ void Yolov5_anpr_onxx_detector::detect_with_different_confidences_then_separate_
 //this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
 //output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
-//from image frame, extract directly license plate number.
-int Yolov5_anpr_onxx_detector::evaluate_without_lpn_detection(const cv::Mat& frame, const std::string& ExactLPN, std::list<std::list<int>>& classIds,
-	std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-	std::list<std::string>& lpns,
-	const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-	std::string& best_lpn,
-	//output = characters in nearest lpn 
-	std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes)
-{
-	detect_and_add_lp_and_vehicle_if_necessary(frame,
-		//setections when they are separated in double linked list (one list for one lp)
-		classIds,
-		confidences, boxes,
-		lpns,
-		classId_last_country
-		//classId_last_country : is the class index of the last country in the list of detected classes.
-	);
-	int min_editdistance = SHRT_MAX;
-	Levenshtein lev;
-	std::list <std::string>::iterator it_lpns(lpns.begin());
-	std::list < std::list<float>>::const_iterator it_confidences(confidences.begin());
-	std::list < std::list<int>>::iterator it_classes(classIds.begin());
-	std::list < std::list<cv::Rect>>::const_iterator it_boxes(boxes.begin());
-	while (it_lpns != lpns.end() &&
-		it_confidences != confidences.end() && it_classes != classIds.end() && it_boxes != boxes.end())
-	{
-		//int editdistance = lev.Get(ExactLPN, *it_lpns);
-		int editdistance = lev.Get(ExactLPN.c_str(), ExactLPN.length(), it_lpns->c_str(), it_lpns->length());
-		if (min_editdistance > editdistance) {
-			min_editdistance = editdistance;
-			best_lpn = *it_lpns;
-			best_confidences = *it_confidences;
-			best_classes = *it_classes;
-			best_boxes = *it_boxes;
-		}
-		it_lpns++;
-		it_confidences++;
-		it_classes++;
-		it_boxes++;
-	}
-	return min_editdistance;
-}
-// Given the @p input frame, create input blob, run net and return result detections.
-//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
-//from image frame, extract directly license plate number.
-int Yolov5_anpr_onxx_detector::evaluate_without_lpn_detection(const std::string& image_filename, const std::string& ExactLPN, std::list<std::list<int>>& classIds,
-	std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-	std::list<std::string>& lpns,
-	const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-	std::string& best_lpn,
-	//output = characters in nearest lpn 
-	std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes)
-{
-	std::filesystem::path p_(image_filename);
-	if (exists(p_) && std::filesystem::is_regular_file(p_))    // does p actually exist?
-	{
-		int flags = -1;//as is
-		cv::Mat frame = cv::imread(image_filename, flags);
-		//from image frame, extract directly license plate number.
-		return evaluate_without_lpn_detection(frame, ExactLPN,
-			//double linked lists to separate lps
-			classIds, confidences, boxes, lpns, classId_last_country, best_lpn,
-			//output = characters in nearest lpn 
-			best_confidences, best_classes, best_boxes
-			//, confThreshold, nmsThreshold
-		);
-	}
-	else return SHRT_MAX;
-}
-// Given the @p input frame, create input blob, run net and return result detections.
-//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
 void Yolov5_anpr_onxx_detector::detect_and_add_lp_and_vehicle_if_necessary(const cv::Mat& frame, std::list<std::list<int>>& classIds,
 	std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
 	std::list<std::string>& lpns,
@@ -303,7 +231,8 @@ void Yolov5_anpr_onxx_detector::detect_and_add_lp_and_vehicle_if_necessary(const
 // Given the @p input frame, create input blob, run net and return result detections.
 //this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
 //output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
+//and remaining elements are characters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 void Yolov5_anpr_onxx_detector::detect_and_add_lp_and_vehicle_if_necessary(const cv::Mat& frame,
 	//setections when they are separated in double linked list (one list for one lp)
 	std::list<std::vector<int>>& classIds,
@@ -481,16 +410,16 @@ Yolov5_anpr_onxx_detector* get_detector_with_smallest_size_bigger_than_image(con
 		return get_detector_with_smallest_size_bigger_than_image(detectors, height);
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-float Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(const std::string& dir)
+float Yolov5_anpr_onxx_detector::two_stage_lpr(const std::string& dir)
 {
-	return evaluate_lpn_with_lpn_detection(*this, dir);
+	return two_stage_lpr(*this, dir);
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-float Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const std::string& dir)
+float Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const std::string& dir)
 {
 	std::string filename = "D:\\Programmation\\LPReditor\\ocr_dataset\\test_svm.txt";
 	std::ofstream O(filename.c_str(), std::ios::app);
-	O << "Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection " << std::endl;
+	O << "Yolov5_anpr_onxx_detector::two_stage_lpr " << std::endl;
 	//O.flush(); O.close();
 	std::list<std::string> image_filenames;
 	//extracts, from a test directory, all images files that come with an xml file containing the bb coordinates in this image
@@ -508,7 +437,7 @@ float Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onx
 		std::list < std::list<float>>  confidences; std::list < std::list<int>>  classes; std::list < std::list<cv::Rect>>  boxes;
 		//detection inside the chosen lp
 		std::list<int> chosen_lp_classIds; std::list<float> chosen_lp_confidences; std::list<cv::Rect> chosen_lp_boxes;
-		evaluate_lpn_with_lpn_detection(parking_detector, *it_image_filenames,
+		two_stage_lpr(parking_detector, *it_image_filenames,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
 			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -578,7 +507,7 @@ float Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onx
 	return good_reads_percentage;
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(const std::string& image_filename,
+void Yolov5_anpr_onxx_detector::two_stage_lpr(const std::string& image_filename,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -587,18 +516,17 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(const std::strin
 	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
 )
 {
-	return evaluate_lpn_with_lpn_detection(*this, image_filename,
+	return two_stage_lpr(*this, image_filename,
 		//double linked lists to separate lps
 		confidences, classes, boxes,
 		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
 		lpns, lp_country_class, lp_rois,
 		//detection inside the chosen lp
 		chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
-		//,	availableAlpha//, must_convert_from_NO_I_O_2_NO_O
 	);
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const std::string& image_filename,
+void Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const std::string& image_filename,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -608,14 +536,13 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 )
 {
 	if (parking_detector.max_image_size() > max_image_size())
-		return parking_detector.evaluate_lpn_with_lpn_detection(*this, image_filename,
+		return parking_detector.two_stage_lpr(*this, image_filename,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
 			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
 			lpns, lp_country_class, lp_rois,
 			//detection inside the chosen lp
 			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
-			//,	availableAlpha//, must_convert_from_NO_I_O_2_NO_O
 		);
 	else {
 		std::filesystem::path p_(image_filename);
@@ -623,20 +550,18 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 		{
 			int flags = -1;//as is
 			cv::Mat frame = cv::imread(image_filename, flags);
-			return evaluate_lpn_with_lpn_detection(parking_detector, frame,
+			return two_stage_lpr(parking_detector, frame,
 				//double linked lists to separate lps
 				confidences, classes, boxes,
 				//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
 				lpns, lp_country_class, lp_rois,
 				//detection inside the chosen lp
 				chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
-				//,	availableAlpha//, must_convert_from_NO_I_O_2_NO_O
 			);
 		}
 	}
 }
 void get_larger_roi(cv::Rect& lpn_roi, const int width, const int height
-	//, int & left_translation, int & top_translation
 )
 {
 	int w = lpn_roi.width;
@@ -647,8 +572,25 @@ void get_larger_roi(cv::Rect& lpn_roi, const int width, const int height
 	lpn_roi.height += int(3.0f * (float)h);
 	lpn_roi = get_inter(lpn_roi, cv::Rect(0, 0, width, height));
 }
+void get_larger_roi(cv::Rect& lpn_roi, const int width, const int height, const float& scale_x, const float& scale_y
+)
+{
+	int w = lpn_roi.width;
+	int h = lpn_roi.height;
+	/*
+	lpn_roi.x -= w;
+	lpn_roi.width += int(2.0f * (float)w);
+	lpn_roi.y -= int(1.5f * (float)h);
+	lpn_roi.height += int(3.0f * (float)h);
+	*/
+	lpn_roi.width = int((float)lpn_roi.width * scale_x);
+	lpn_roi.x -= (lpn_roi.width - w) / 2;
+	lpn_roi.height = int((float)lpn_roi.height * scale_y);
+	lpn_roi.y -= (lpn_roi.height - h) / 2;
+	lpn_roi = get_inter(lpn_roi, cv::Rect(0, 0, width, height));
+}
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame,
+void Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -658,7 +600,7 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 )
 {
 	if (parking_detector.max_image_size() > max_image_size())
-		return parking_detector.evaluate_lpn_with_lpn_detection(*this, frame,
+		return parking_detector.two_stage_lpr(*this, frame,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
 			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -672,7 +614,7 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 		freeflow_detectors.push_back(&(*this));
 		std::list<Yolov5_anpr_onxx_detector*> parking_detectors;
 		parking_detectors.push_back(&(parking_detector));
-		return ::evaluate_lpn_with_lpn_detection(freeflow_detectors, parking_detectors,
+		return ::two_stage_lpr(freeflow_detectors, parking_detectors,
 			frame,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
@@ -684,7 +626,43 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 	}
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const std::string& image_filename,
+void Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, Plates_types_classifier& plates_types_classifier, const cv::Mat& frame,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+)
+{
+	if (parking_detector.max_image_size() > max_image_size())
+		return parking_detector.two_stage_lpr(*this, plates_types_classifier, frame,
+			//double linked lists to separate lps
+			confidences, classes, boxes,
+			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+			lpns, lp_country_class, lp_rois,
+			//detection inside the chosen lp
+			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
+			//, availableAlpha//, must_convert_from_NO_I_O_2_NO_O
+		);
+	else {
+		std::list<Yolov5_anpr_onxx_detector*> freeflow_detectors;
+		freeflow_detectors.push_back(&(*this));
+		std::list<Yolov5_anpr_onxx_detector*> parking_detectors;
+		parking_detectors.push_back(&(parking_detector));
+		return ::two_stage_lpr(freeflow_detectors, parking_detectors, plates_types_classifier,
+			frame,
+			//double linked lists to separate lps
+			confidences, classes, boxes,
+			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+			lpns, lp_country_class, lp_rois,
+			//detection inside the chosen lp
+			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
+		);
+	}
+}
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const std::string& image_filename,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -698,7 +676,7 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 	{
 		int flags = -1;//as is
 		cv::Mat frame = cv::imread(image_filename, flags);
-		evaluate_lpn_with_lpn_detection(detectors, detectors,
+		two_stage_lpr(detectors, detectors,
 			frame,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
@@ -706,12 +684,11 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 			lpns, lp_country_class, lp_rois,
 			//detection inside the chosen lp
 			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
-			//,	availableAlpha//, must_convert_from_NO_I_O_2_NO_O
 		);
 	}
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
 	const std::string& image_filename,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
@@ -726,7 +703,7 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 	{
 		int flags = -1;//as is
 		cv::Mat frame = cv::imread(image_filename, flags);
-		evaluate_lpn_with_lpn_detection(freeflow_detectors, parking_detectors,
+		two_stage_lpr(freeflow_detectors, parking_detectors,
 			frame,
 			//double linked lists to separate lps
 			confidences, classes, boxes,
@@ -734,12 +711,11 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 			lpns, lp_country_class, lp_rois,
 			//detection inside the chosen lp
 			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
-			//,	availableAlpha//, must_convert_from_NO_I_O_2_NO_O
 		);
 	}
 }
 //two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
 	const cv::Mat& frame,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
@@ -769,7 +745,6 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 //(with best confidences of its characters and with greateast size)
 				//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
-
 				float nmsThreshold = 0.3f;
 				pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(frame, classes,
 					confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp,
@@ -814,20 +789,17 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 							else pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, classes_inside_lp,
 								confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
 								classId_last_country, nmsThreshold);
-
 							//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
 							//it can deal with license pates that have two lines of charcaters
 							std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
 							std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
 							const float nmsThreshold_lpn = 0.5;
 							std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
-
 								tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
 							if (inside_lp_one_lp.size() > 2) {
 								std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
 								std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
 								std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
-
 								while (it_out_classes_ != tri_left_classIds.end()
 									&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
 									if (
@@ -853,72 +825,17 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 								lp_country_class.push_back(classIds_one_lp.front());
 								lp_rois.push_back(one_lp.front());
 							}
-							/*
-							std::vector<int> vet_of_classIds;
-							std::vector<float> vect_of_confidences;
-							std::vector<cv::Rect> vect_of_detected_boxes;
-							//Given the @p input frame, create input blob, run net and return result detections.
-							Yolov5_anpr_onxx_detector* pnet_inside_lpn_detector = get_detector_with_smallest_size_bigger_than_image(parking_detectors, subimage_.cols, subimage_.rows);
-							if (pnet_inside_lpn_detector != nullptr) {
-								pnet_inside_lpn_detector->detect(subimage_, vet_of_classIds, vect_of_confidences, vect_of_detected_boxes);
-							}
-							else pnet_lpn_detector->detect(subimage_, vet_of_classIds, vect_of_confidences, vect_of_detected_boxes);
-							//now filter boxes with big iou
-			//if two boxes have an iou (intersection over union) that is too large, then they cannot represent two adjacent characters of the license plate 
-			//so we discard the one with the lowest confidence rate
-							filter_iou(vet_of_classIds,
-								vect_of_confidences,
-								vect_of_detected_boxes);
-							if (vect_of_detected_boxes.size() > 2) {
-								std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
-								std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
-								//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
-								//it can deal with license pates that have two lines of charcaters
-								std::string lpn;
-								lpn =
-									get_best_lpn(vect_of_detected_boxes, vect_of_confidences, vet_of_classIds,
-										tri_left_vect_of_detected_boxes,
-										tri_left_confidences, tri_left_classIds
-									);
-								std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
-								std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
-								std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
-								//C_OCROutputs availableAlpha_LATIN(LATIN_LETTERS_LATIN_DIGITS);
-								while (it_out_classes_ != tri_left_classIds.end()
-									&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
-									if (
-										(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
-										(lpn.empty())
-										) {
-										//now we must change the coordinates of the box to fit global image
-										cv::Rect box_in_global_image(it_boxes->x + lpn_roi.x, it_boxes->y + lpn_roi.y, it_boxes->width, it_boxes->height);
-										chosen_lp_boxes.push_back(box_in_global_image);
-										chosen_lp_classIds.push_back(*it_out_classes_);
-										chosen_lp_confidences.push_back(*it_confidences);
-									}
-									it_out_classes_++;
-									it_confidences++;
-									it_boxes++;
-								}
-#ifdef _DEBUG
-								assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
-								assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
-#endif //_DEBUG
-								lpns.push_back(lpn);
-								lp_country_class.push_back(classIds_one_lp.front());
-								lp_rois.push_back(one_lp.front());
-							}*/
 							else {
 								//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
 								//it can deal with license pates that have two lines of charcaters
 								std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
 								std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
 								const float nmsThreshold_lpn = 0.5;
+								//rearange boxes from left to right
 								std::string lpn = get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp, tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
 								std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
 								std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
 								std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
-								//C_OCROutputs availableAlpha_LATIN(LATIN_LETTERS_LATIN_DIGITS);
 								while (it_out_classes_ != tri_left_classIds.end()
 									&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
 									if (
@@ -951,11 +868,11 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 							std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
 							std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
 							const float nmsThreshold_lpn = 0.5;
+							//rearange boxes from left to right
 							std::string lpn = get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp, tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
 							std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
 							std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
 							std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
-							//C_OCROutputs availableAlpha_LATIN(LATIN_LETTERS_LATIN_DIGITS);
 							while (it_out_classes_ != tri_left_classIds.end()
 								&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
 								if (
@@ -988,11 +905,11 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 						std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
 						std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
 						const float nmsThreshold_lpn = 0.5;
+						//rearange boxes from left to right
 						std::string lpn = get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp, tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
 						std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
 						std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
 						std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
-						//C_OCROutputs availableAlpha_LATIN(LATIN_LETTERS_LATIN_DIGITS);
 						while (it_out_classes_ != tri_left_classIds.end()
 							&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
 							if (
@@ -1105,68 +1022,7 @@ void Yolov5_anpr_onxx_detector::detect_with_different_confidences_then_separate_
 //this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
 //output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
-void Yolov5_anpr_onxx_detector::evaluate_without_lpn_detection(const cv::Mat & frame, std::list<std::list<int>> & classIds,
-	std::list < std::list<float>> & confidences, std::list < std::list<cv::Rect>> & boxes,
-	std::list<std::string> & lpns,
-	const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-	std::string & best_lpn,
-	//output = characters in nearest lpn 
-	std::list<float> & best_confidences, std::list<int> & best_classes, std::list<cv::Rect> & best_boxes)
-{
-	detect_and_add_lp_and_vehicle_if_necessary(frame,
-		//setections when they are separated in double linked list (one list for one lp)
-		classIds,
-		confidences, boxes,
-		lpns,
-		classId_last_country
-		//classId_last_country : is the class index of the last country in the list of detected classes.
-		//,confThreshold, nmsThreshold
-	);
-#ifdef _DEBUG
-	assert(classIds.size() == confidences.size() && classIds.size() == boxes.size() && classIds.size() == lpns.size());
-#endif //_DEBUG
-	if (lpns.size() && classIds.size() == confidences.size() && classIds.size() == boxes.size() && classIds.size() == lpns.size()) {
-		best_lpn = lpns.front();
-		best_confidences = confidences.front();
-		best_classes = classIds.front();
-		best_boxes = boxes.front();
-	}
-}
-// Given the @p input frame, create input blob, run net and return result detections.
-//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-//output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
-void Yolov5_anpr_onxx_detector::evaluate_without_lpn_detection(const cv::Mat & frame, std::string & lpn)
-{
-	std::list<std::list<int>> classIds;
-	std::list < std::list<float>> confidences;
-	std::list < std::list<cv::Rect>> boxes;
-	std::list<std::string> lpns;
-	std::string best_lpn;
-	std::list<float>  best_confidences; std::list<int> best_classes; std::list<cv::Rect> best_boxes;
-	const int classId_last_country = NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE + NUMBER_OF_COUNTRIES - 1;
-	evaluate_without_lpn_detection(frame, classIds,
-		confidences, boxes,
-		lpns,
-		classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		best_lpn,
-		best_confidences, best_classes, best_boxes
-		//, confThreshold, nmsThreshold
-	);
-	std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
-	std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
-	//the nnet has detected boxes that represant characters of the license plate, this function now etracts from these boxes the license plate number. 
-	//it can deal with license pates that have two lines of charcaters
-	lpn = get_best_lpn(best_boxes, best_confidences, best_classes,
-		tri_left_vect_of_detected_boxes,
-		tri_left_confidences, tri_left_classIds
-	);
-}
-// Given the @p input frame, create input blob, run net and return result detections.
-//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-//output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
-void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector & parking_detector, const cv::Mat & frame, std::string & lpn)
+void Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector & parking_detector, const cv::Mat & frame, std::string & lpn)
 {
 	std::list<std::list<int>> classIds;
 	std::list < std::list<float>> confidences;
@@ -1176,18 +1032,7 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 	std::list < cv::Rect> lp_rois;
 	std::string best_lpn;
 	std::list<float>  best_confidences; std::list<int> best_classes; std::list<cv::Rect> best_boxes;
-	/*
-	const int classId_last_country = NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE +NUMBER_OF_COUNTRIES - 1;
-	evaluate_without_lpn_detection(frame, classIds,
-		confidences, boxes,
-		lpns,
-		classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		best_lpn,
-		best_confidences, best_classes, best_boxes
-		//, confThreshold, nmsThreshold
-	);
-	*/
-	evaluate_lpn_with_lpn_detection(parking_detector, frame,
+	two_stage_lpr(parking_detector, frame,
 		//double linked lists to separate lps
 		confidences, classIds, boxes,
 		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -1209,25 +1054,938 @@ void Yolov5_anpr_onxx_detector::evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx
 //this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
 //output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
 //and remaining elements are characters
-void Yolov5_anpr_onxx_detector::evaluate_without_lpn_detection(const std::string & image_filename, std::list<std::list<int>> & classIds,
-	std::list < std::list<float>> & confidences, std::list < std::list<cv::Rect>> & boxes,
-	std::list<std::string> & lpns,
-	const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-	std::string & best_lpn,
-	//output = characters in nearest lpn 
-	std::list<float> & best_confidences, std::list<int> & best_classes, std::list<cv::Rect> & best_boxes)
+void Yolov5_anpr_onxx_detector::two_stage_lpr(Yolov5_anpr_onxx_detector & parking_detector, Plates_types_classifier& plates_types_classifier, const cv::Mat & frame, std::string & lpn)
+{
+	std::list<std::list<int>> classIds;
+	std::list < std::list<float>> confidences;
+	std::list < std::list<cv::Rect>> boxes;
+	std::list<std::string> lpns;
+	std::list <int> lp_country_class;
+	std::list < cv::Rect> lp_rois;
+	std::string best_lpn;
+	std::list<float>  best_confidences; std::list<int> best_classes; std::list<cv::Rect> best_boxes;
+	two_stage_lpr(parking_detector, plates_types_classifier, frame,
+		//double linked lists to separate lps
+		confidences, classIds, boxes,
+		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+		lpns,
+		lp_country_class, lp_rois,
+		//detection inside the chosen lp
+		best_classes, best_confidences, best_boxes
+	);
+	std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+	std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+	//the nnet has detected boxes that represant characters of the license plate, this function now etracts from these boxes the license plate number. 
+	//it can deal with license pates that have two lines of charcaters
+	lpn = get_best_lpn(best_boxes, best_confidences, best_classes,
+		tri_left_vect_of_detected_boxes,
+		tri_left_confidences, tri_left_classIds
+	);
+}
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+)
 {
 	std::filesystem::path p_(image_filename);
 	if (exists(p_) && std::filesystem::is_regular_file(p_))    // does p actually exist?
 	{
 		int flags = -1;//as is
 		cv::Mat frame = cv::imread(image_filename, flags);
-		evaluate_without_lpn_detection(frame,
+		std::cout << std::endl;
+		std::cout << p_.filename().string() << std::endl;
+		two_stage_lpr(freeflow_detectors, parking_detectors, plates_types_classifier,
+			frame,
 			//double linked lists to separate lps
-			classIds, confidences, boxes, lpns, classId_last_country, best_lpn,
-			//output = characters in nearest lpn 
-			best_confidences, best_classes, best_boxes
-			//, confThreshold, nmsThreshold
+			confidences, classes, boxes,
+			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+			lpns, lp_country_class, lp_rois,
+			//detection inside the chosen lp
+			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
 		);
 	}
 }
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(Yolov5_anpr_onxx_detector & freeflow_detector, Yolov5_anpr_onxx_detector & parking_detector
+	, Plates_types_classifier& plates_types_classifier,
+	const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+)
+{
+	std::filesystem::path p_(image_filename);
+	if (exists(p_) && std::filesystem::is_regular_file(p_))    // does p actually exist?
+	{
+		int flags = -1;//as is
+		cv::Mat frame = cv::imread(image_filename, flags);
+		std::cout << std::endl;
+		std::cout << p_.filename().string() << std::endl;
+		two_stage_lpr(freeflow_detector, parking_detector, plates_types_classifier,
+			frame,
+			//double linked lists to separate lps
+			confidences, classes, boxes,
+			//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+			lpns, lp_country_class, lp_rois,
+			//detection inside the chosen lp
+			chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes
+		);
+	}
+}
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const cv::Mat& frame,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+)
+{
+	if (frame.rows > 0 && frame.cols > 0) {
+		//global image
+		cv::Scalar mean_ = cv::mean(frame);
+		if (mean_[0] > 2.0f && mean_[0] < 250.0f) {
+			std::vector<int> classIds_lpn;
+			std::vector<float> confidences_lpn;
+			std::vector<cv::Rect> vect_of_detected_boxes_lpn;
+			//Given the @p input frame, create input blob, run net and return result detections.
+			//
+			Yolov5_anpr_onxx_detector* pnet_lpn_detector = get_detector_with_smallest_size_bigger_than_image(freeflow_detectors, frame.cols, frame.rows);
+			if (pnet_lpn_detector != nullptr) {
+				std::list<float> confidence_one_lp;
+				std::list < cv::Rect> one_lp;
+				std::list<int> classIds_one_lp;
+				const int classId_last_country = NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE + NUMBER_OF_COUNTRIES - 1;
+				float nmsThreshold = 0.3f;
+				//it selects just one lpn although all lps have been detected and stored in double linked lists, then from these lists, selects the one that is the best 
+//(with best confidences of its characters and with greateast size)
+				//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+//and remaining elements are characters
+				pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(frame, classes,
+					confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp,
+					classId_last_country,
+					nmsThreshold);
+				if (one_lp.size()) {
+					//one_lp is the list of the boundinx boxes of a lp. one_lp is the best lps in the image (see func detect_with_different_confidences_then_separate_plates). And we are sure that the front element of the boxes is the lp.
+					cv::Rect lpn_roi = one_lp.front();
+#ifdef _DEBUG
+					//given the index of a bounding box, we can predict if this box is a single character or if it represents the license plate area or if it is the roi of an entire vehicle
+					//single character--> returns 1
+					//license plate--> returns 2
+					//vehicle--> returns 3
+					//negative index--> returns 0 must be an error
+					assert(is_this_box_a_character_a_license_plate_or_a_vehicle(classIds_one_lp.front(), classId_last_country) == 2);
+#endif //_DEBUG
+					float confidence_lpn_roi = confidence_one_lp.front();
+					if (lpn_roi.width > 0 && lpn_roi.height > 0 && lpn_roi.x >= 0 && lpn_roi.y >= 0 &&
+						confidence_lpn_roi > 0.0f && lpn_roi.x + lpn_roi.width <= frame.cols && lpn_roi.y <= frame.rows) {
+						get_larger_roi(lpn_roi, frame.cols, frame.rows, 2.f, 3.f);
+#ifdef _DEBUG
+						if (lpn_roi.area() < ((frame.rows * frame.cols) / //40
+							1
+							)) {
+#else // _DEBUG		
+						if (lpn_roi.area() < ((frame.rows * frame.cols) / 10)) {
+#endif //_DEBUG
+							//image of lpn
+							cv::Mat subimage_;
+							cv::Point  top_left_;
+							cv::Point  top_right_;
+							cv::Point  bottom_right_;
+							cv::Point  bottom_left_;
+							cv::Rect rect_OpenLP_;
+							bool plaque_trouvee = trouve_la_plaque(frame,
+								classIds_one_lp, one_lp,
+								top_left_,
+								top_right_,
+								bottom_right_,
+								bottom_left_, rect_OpenLP_);
+							if (plaque_trouvee) {
+								lpn_roi = rect_OpenLP_;
+								get_larger_roi(lpn_roi, frame.cols, frame.rows, 1.2f, 1.2f);
+							}
+								subimage_ = frame(lpn_roi);
+							std::vector<int> vet_of_classIds;
+							std::vector<float> vect_of_confidences;
+							std::vector<cv::Rect> vect_of_detected_boxes;
+							//Given the @p input frame, create input blob, run net and return result detections.
+							Yolov5_anpr_onxx_detector* pnet_inside_lpn_detector = get_detector_with_smallest_size_bigger_than_image(parking_detectors, subimage_.cols, subimage_.rows);
+							std::list < std::list<float>> confidences_inside_lp; std::list < std::list<int>> classes_inside_lp; std::list < std::list<cv::Rect>> boxes_inside_lp;
+							std::list<float> inside_lp_confidence_one_lp;
+							std::list < cv::Rect> inside_lp_one_lp;
+							std::list<int> inside_lp_classIds_one_lp;
+							if (pnet_inside_lpn_detector != nullptr) {
+								pnet_inside_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+									confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+									classId_last_country,
+									nmsThreshold);
+							}
+							else pnet_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+								confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+								classId_last_country,
+								nmsThreshold);
+							//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+							//it can deal with license pates that have two lines of charcaters
+							std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+							std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+							const float nmsThreshold_lpn = 0.4f;
+							std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
+								tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+							if (inside_lp_one_lp.size() > 2) {
+								std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+								std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+								std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+								while (it_out_classes_ != tri_left_classIds.end()
+									&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+									if (
+										(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+										(lpn.empty())
+										) {
+										//now we must change the coordinates of the box to fit global image
+										cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+										chosen_lp_boxes.push_back(box_in_global_image);
+										chosen_lp_classIds.push_back(*it_out_classes_);
+										chosen_lp_confidences.push_back(*it_confidences);
+									}
+									it_out_classes_++;
+									it_confidences++;
+									it_boxes++;
+								}
+#ifdef _DEBUG
+								assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+								assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+								lpns.push_back(lpn);
+								lp_country_class.push_back(classIds_one_lp.front());
+								lp_rois.push_back(one_lp.front());
+							}
+							else {
+								get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+									//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+									lpns, lp_country_class, lp_rois,
+									//detection inside the chosen lp
+									chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+							}
+						}
+						else {
+							get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+								//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+								lpns, lp_country_class, lp_rois,
+								//detection inside the chosen lp
+								chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+						}
+						}
+					else {
+						get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+							//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+							lpns, lp_country_class, lp_rois,
+							//detection inside the chosen lp
+							chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+					}
+					}
+				else {
+					//image of lpn
+					cv::Mat subimage_;
+					subimage_ = frame;
+					std::vector<int> vet_of_classIds;
+					std::vector<float> vect_of_confidences;
+					std::vector<cv::Rect> vect_of_detected_boxes;
+					//Given the @p input frame, create input blob, run net and return result detections.
+					Yolov5_anpr_onxx_detector* pnet_inside_lpn_detector = get_detector_with_smallest_size_bigger_than_image(parking_detectors, subimage_.cols, subimage_.rows);
+					std::list < std::list<float>> confidences_inside_lp; std::list < std::list<int>> classes_inside_lp; std::list < std::list<cv::Rect>> boxes_inside_lp;
+					std::list<float> inside_lp_confidence_one_lp;
+					std::list < cv::Rect> inside_lp_one_lp;
+					std::list<int> inside_lp_classIds_one_lp;
+					if (pnet_inside_lpn_detector != nullptr) {
+						pnet_inside_lpn_detector->detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+							confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+							classId_last_country,
+							nmsThreshold);
+					}
+					//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+					//it can deal with license pates that have two lines of charcaters
+					std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+					std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+					const float nmsThreshold_lpn = 0.4f;
+					std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
+						tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+					if (inside_lp_one_lp.size() > 2) {
+						std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+						std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+						std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+						while (it_out_classes_ != tri_left_classIds.end()
+							&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+							if (
+								(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+								(lpn.empty())
+								) {
+								//now we must change the coordinates of the box to fit global image
+								cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+								chosen_lp_boxes.push_back(box_in_global_image);
+								chosen_lp_classIds.push_back(*it_out_classes_);
+								chosen_lp_confidences.push_back(*it_confidences);
+							}
+							it_out_classes_++;
+							it_confidences++;
+							it_boxes++;
+						}
+#ifdef _DEBUG
+						assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+						assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+						lpns.push_back(lpn);
+						if (inside_lp_classIds_one_lp.front() >= 36)
+							lp_country_class.push_back(inside_lp_classIds_one_lp.front());
+						else lp_country_class.push_back(36);
+						lp_rois.push_back(cv::Rect(0, 0, frame.cols, frame.rows));
+					}
+				}
+				}
+			}
+		}
+	}
+	//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+	void two_stage_lpr(Yolov5_anpr_onxx_detector & freeflow_detector, Yolov5_anpr_onxx_detector & parking_detector
+		, Plates_types_classifier& plates_types_classifier,
+		const cv::Mat& frame,
+		//double linked lists to separate lps
+		std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+		std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+		//detection inside the chosen lp
+		std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+	)	
+	{
+		if (frame.rows > 0 && frame.cols > 0) {
+			//global image
+			cv::Scalar mean_ = cv::mean(frame);
+			if (mean_[0] > 2.0f && mean_[0] < 250.0f) {
+				std::vector<int> classIds_lpn;
+				std::vector<float> confidences_lpn;
+				std::vector<cv::Rect> vect_of_detected_boxes_lpn;
+				//Given the @p input frame, create input blob, run net and return result detections.
+				//
+				if (freeflow_detector.is_valid()) {
+					std::list<float> confidence_one_lp;
+					std::list < cv::Rect> one_lp;
+					std::list<int> classIds_one_lp;
+					const int classId_last_country = NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE + NUMBER_OF_COUNTRIES - 1;
+					float nmsThreshold = 0.3f;
+					//it selects just one lpn although all lps have been detected and stored in double linked lists, then from these lists, selects the one that is the best 
+	//(with best confidences of its characters and with greateast size)
+					//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+	//and remaining elements are characters
+					freeflow_detector.detect_with_different_confidences_then_separate_plates(frame, classes,
+						confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp,
+						classId_last_country,
+						nmsThreshold);
+					if (one_lp.size()) {
+						//one_lp is the list of the boundinx boxes of a lp. one_lp is the best lps in the image (see func detect_with_different_confidences_then_separate_plates). And we are sure that the front element of the boxes is the lp.
+						cv::Rect lpn_roi = one_lp.front();
+#ifdef _DEBUG
+						//given the index of a bounding box, we can predict if this box is a single character or if it represents the license plate area or if it is the roi of an entire vehicle
+						//single character--> returns 1
+						//license plate--> returns 2
+						//vehicle--> returns 3
+						//negative index--> returns 0 must be an error
+						assert(is_this_box_a_character_a_license_plate_or_a_vehicle(classIds_one_lp.front(), classId_last_country) == 2);
+#endif //_DEBUG
+						float confidence_lpn_roi = confidence_one_lp.front();
+						if (lpn_roi.width > 0 && lpn_roi.height > 0 && lpn_roi.x >= 0 && lpn_roi.y >= 0 &&
+							confidence_lpn_roi > 0.0f && lpn_roi.x + lpn_roi.width <= frame.cols && lpn_roi.y <= frame.rows) {
+							get_larger_roi(lpn_roi, frame.cols, frame.rows, 2.f, 3.f);
+#ifdef _DEBUG
+							if (lpn_roi.area() < ((frame.rows * frame.cols) / //40
+								1
+								)) {
+#else // _DEBUG		
+							if (lpn_roi.area() < ((frame.rows * frame.cols) / 10)) {
+#endif //_DEBUG
+								//image of lpn
+								cv::Mat subimage_;
+								cv::Point  top_left_;
+								cv::Point  top_right_;
+								cv::Point  bottom_right_;
+								cv::Point  bottom_left_;
+								cv::Rect rect_OpenLP_;
+								bool plaque_trouvee = trouve_la_plaque(frame,
+									classIds_one_lp, one_lp,
+									top_left_,
+									top_right_,
+									bottom_right_,
+									bottom_left_, rect_OpenLP_);
+								if (plaque_trouvee) {
+									lpn_roi = rect_OpenLP_;
+									get_larger_roi(lpn_roi, frame.cols, frame.rows, 1.2f, 1.2f);
+								}
+								subimage_ = frame(lpn_roi);
+								std::vector<int> vet_of_classIds;
+								std::vector<float> vect_of_confidences;
+								std::vector<cv::Rect> vect_of_detected_boxes;
+								//Given the @p input frame, create input blob, run net and return result detections.
+								std::list < std::list<float>> confidences_inside_lp; std::list < std::list<int>> classes_inside_lp; std::list < std::list<cv::Rect>> boxes_inside_lp;
+								std::list<float> inside_lp_confidence_one_lp;
+								std::list < cv::Rect> inside_lp_one_lp;
+								std::list<int> inside_lp_classIds_one_lp;
+								if (parking_detector.is_valid()) {
+									parking_detector.detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+										confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+										classId_last_country,
+										nmsThreshold);
+								}
+								else freeflow_detector.detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+									confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+									classId_last_country,
+									nmsThreshold);
+								//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+								//it can deal with license pates that have two lines of charcaters
+								std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+								std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+								const float nmsThreshold_lpn = 0.4f;
+								std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
+									tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+								if (inside_lp_one_lp.size() > 2) {
+									std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+									std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+									std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+									while (it_out_classes_ != tri_left_classIds.end()
+										&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+										if (
+											(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+											(lpn.empty())
+											) {
+											//now we must change the coordinates of the box to fit global image
+											cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+											chosen_lp_boxes.push_back(box_in_global_image);
+											chosen_lp_classIds.push_back(*it_out_classes_);
+											chosen_lp_confidences.push_back(*it_confidences);
+										}
+										it_out_classes_++;
+										it_confidences++;
+										it_boxes++;
+									}
+#ifdef _DEBUG
+									assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+									assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+									lpns.push_back(lpn);
+									lp_country_class.push_back(classIds_one_lp.front());
+									lp_rois.push_back(one_lp.front());
+								}
+								else {
+									get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+										//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+										lpns, lp_country_class, lp_rois,
+										//detection inside the chosen lp
+										chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+								}
+							}
+							else {
+								get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+									//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+									lpns, lp_country_class, lp_rois,
+									//detection inside the chosen lp
+									chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+							}
+							}
+						else {
+							get_best_lpn(one_lp, confidence_one_lp, classIds_one_lp,
+								//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+								lpns, lp_country_class, lp_rois,
+								//detection inside the chosen lp
+								chosen_lp_classIds, chosen_lp_confidences, chosen_lp_boxes);
+						}
+						}
+					else {
+						//image of lpn
+						cv::Mat subimage_;
+						subimage_ = frame;
+						std::vector<int> vet_of_classIds;
+						std::vector<float> vect_of_confidences;
+						std::vector<cv::Rect> vect_of_detected_boxes;
+						//Given the @p input frame, create input blob, run net and return result detections.
+						std::list < std::list<float>> confidences_inside_lp; std::list < std::list<int>> classes_inside_lp; std::list < std::list<cv::Rect>> boxes_inside_lp;
+						std::list<float> inside_lp_confidence_one_lp;
+						std::list < cv::Rect> inside_lp_one_lp;
+						std::list<int> inside_lp_classIds_one_lp;
+						if (parking_detector.is_valid()) {
+							parking_detector.detect_with_different_confidences_then_separate_plates(subimage_, plates_types_classifier, classes_inside_lp,
+								confidences_inside_lp, boxes_inside_lp, inside_lp_confidence_one_lp, inside_lp_one_lp, inside_lp_classIds_one_lp,
+								classId_last_country,
+								nmsThreshold);
+						}
+						//the nnet has detected boxes that represent characters of the license plate, this function now etracts from these boxes the license plate number. 
+						//it can deal with license pates that have two lines of charcaters
+						std::vector<cv::Rect> tri_left_vect_of_detected_boxes;
+						std::vector<float> tri_left_confidences;  std::vector<int> tri_left_classIds;
+						const float nmsThreshold_lpn = 0.4f;
+						std::string lpn = get_best_lpn(inside_lp_one_lp, inside_lp_confidence_one_lp, inside_lp_classIds_one_lp,
+							tri_left_vect_of_detected_boxes, tri_left_confidences, tri_left_classIds, nmsThreshold_lpn);
+						if (inside_lp_one_lp.size() > 2) {
+							std::vector<float>::iterator it_confidences(tri_left_confidences.begin());
+							std::vector<cv::Rect>::iterator it_boxes(tri_left_vect_of_detected_boxes.begin());
+							std::vector<int>::iterator it_out_classes_(tri_left_classIds.begin());
+							while (it_out_classes_ != tri_left_classIds.end()
+								&& it_confidences != tri_left_confidences.end() && it_boxes != tri_left_vect_of_detected_boxes.end()) {
+								if (
+									(*it_out_classes_ < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE) ||
+									(lpn.empty())
+									) {
+									//now we must change the coordinates of the box to fit global image
+									cv::Rect box_in_global_image(it_boxes->x, it_boxes->y, it_boxes->width, it_boxes->height);
+									chosen_lp_boxes.push_back(box_in_global_image);
+									chosen_lp_classIds.push_back(*it_out_classes_);
+									chosen_lp_confidences.push_back(*it_confidences);
+								}
+								it_out_classes_++;
+								it_confidences++;
+								it_boxes++;
+							}
+#ifdef _DEBUG
+							assert(chosen_lp_confidences.size() == chosen_lp_classIds.size() && chosen_lp_boxes.size() == chosen_lp_classIds.size());
+							assert(lpn.length() == chosen_lp_classIds.size() || lpn.length() == 0);
+#endif //_DEBUG
+							lpns.push_back(lpn);
+							if (inside_lp_classIds_one_lp.front() >= 36)
+								lp_country_class.push_back(inside_lp_classIds_one_lp.front());
+							else lp_country_class.push_back(36);
+							lp_rois.push_back(cv::Rect(0, 0, frame.cols, frame.rows));
+						}
+					}
+					}
+				}
+			}
+		}
+	//
+	//Given the @p input frame, create input blob, run net and return result detections.
+	//it selects just one lpn although all lps are detected in double linked lists
+	////this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
+	////output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+	////and remaining elements are characters.
+//Produces double linked lists : inside list is for characters and outside list is for plates.
+void Yolov5_anpr_onxx_detector::detect_lpn_and_add_lp_and_vehicle_if_necessary(const cv::Mat& frame, Plates_types_classifier& plates_types_classifier, std::list < std::vector<int>>& classIds,
+		std::list < std::vector<float>>& confidences, std::list < std::vector<cv::Rect>>& boxes
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp,
+		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.We remember that ascii(latin) characters come fist(36 classes) then come the license plates countries(another 60 classses) then come a long list of vehicles classes
+		//const C_OCROutputs & availableAlpha,
+		const float confThreshold, float nmsThreshold)
+	{
+		std::list<std::string> lpns;
+		//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
+		//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+	//and remaining elements are characters
+		detect_and_add_lp_and_vehicle_if_necessary(frame, classIds,
+			confidences, boxes, lpns,
+			classId_last_country,
+			confThreshold, nmsThreshold);
+		//now choose best lpn
+		//For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+		plates_types_classifier.get_best_plate(frame, classIds,
+			confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp);
+	}
+	//Given the @p input frame, create input blob, run net then, from result detections, assembly license plates present in the input image.
+	void Yolov5_anpr_onxx_detector::detect_with_different_confidences_then_separate_plates(const cv::Mat& frame, Plates_types_classifier& plates_types_classifier, std::list < std::list<int>>& classIds,
+		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp,
+		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.We remember that ascii(latin) characters come fist(36 classes) then come the license plates countries(another 60 classses) then come a long list of vehicles classes
+		//const C_OCROutputs & availableAlpha,
+		float nmsThreshold)
+	{
+		std::list <std::list<std::string>> lpns;
+		detect_with_different_confidences_then_separate_plates(frame, classIds,
+			confidences, boxes, lpns
+			, nmsThreshold, classId_last_country);
+		//now choose best lpn
+		//For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+		plates_types_classifier.get_best_plate(frame, classIds,
+			confidences, boxes, confidence_one_lp, one_lp, classIds_one_lp);
+	}
+	//////////////////////////////////////////////////////////////////////
+	// Construction/Destruction
+	//////////////////////////////////////////////////////////////////////
+	Plates_types_classifier::Plates_types_classifier(Ort::Env& env, const ORTCHAR_T* model_path, const Ort::SessionOptions& options
+		, const std::vector<std::string>& labels_)
+		: OnnxDetector(env, model_path, options), labels(labels_)
+	{
+	}
+	Plates_types_classifier::Plates_types_classifier(Ort::Env& env, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options
+		, const std::vector<std::string>& labels_)
+		: OnnxDetector(env, model_data, model_data_length, options), labels(labels_)
+	{
+	}
+	Plates_types_classifier::Plates_types_classifier(Ort::Env& env, const ORTCHAR_T* model_path, const Ort::SessionOptions& options
+		, const std::string& labels_filename)
+		: OnnxDetector(env, model_path, options)
+	{
+		labels = get_plates_types_labels(labels_filename);
+	}
+	Plates_types_classifier::Plates_types_classifier(Ort::Env& env, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options
+		, const std::string& labels_filename)
+		: OnnxDetector(env, model_data, model_data_length, options)
+	{
+		labels = get_plates_types_labels(labels_filename);
+	}
+	Plates_types_classifier::~Plates_types_classifier()
+	{
+	}
+	int Plates_types_classifier::GetPlatesClasse(const cv::Mat& img, float& uncalibrated_confidence) {
+		std::vector<std::vector<Detection>> result;
+		cv::Mat resizedImageRGB, resizedImage, preprocessedImage;
+		Ort::TypeInfo inputTypeInfo = session.GetInputTypeInfo(0);
+		auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
+		std::vector<int64_t> inputDims = inputTensorInfo.GetShape();
+		//cv::Mat img = cv::imread(imageFilepath, cv::ImreadModes::IMREAD_COLOR);
+		int channels_ = img.channels();
+		if (
+			img.size().width &&
+			img.size().height && ((channels_ == 1) || (channels_ == 3) || (channels_ == 4))) {
+			if (channels_ == 1) {
+				cv::cvtColor(img, resizedImageRGB,
+					cv::ColorConversionCodes::COLOR_GRAY2RGB);
+			}
+			else if (channels_ == 4) {
+				cv::cvtColor(img, resizedImageRGB,
+					cv::ColorConversionCodes::COLOR_BGRA2RGB);
+			}
+			else if (channels_ == 3) {
+				int type = img.type();
+				cv::cvtColor(img, resizedImageRGB, cv::ColorConversionCodes::COLOR_BGR2RGB);
+				//resizedImageRGB = img.clone();
+			}
+			float pad_w = -1.0f, pad_h = -1.0f, scale = -1.0f;
+			cv::resize(resizedImageRGB, resizedImageRGB,
+				cv::Size(int(inputDims.at(3)), int(inputDims.at(2))),
+				cv::InterpolationFlags::INTER_CUBIC);
+			resizedImageRGB.convertTo(resizedImage, CV_32FC3, 1.0f / 255.0f);
+			/**/
+			resizedImage -= 0.1307;
+			resizedImage /= 0.3081;
+			// HWC to CHW
+			cv::dnn::blobFromImage(resizedImage, preprocessedImage);
+			int64_t inputTensorSize = vectorProduct(inputDims);
+			std::vector<float> inputTensorValues(inputTensorSize);
+			inputTensorValues.assign(preprocessedImage.begin<float>(),
+				preprocessedImage.end<float>());
+			Ort::TypeInfo outputTypeInfo = session.GetOutputTypeInfo(0);
+			auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
+			ONNXTensorElementDataType outputType = outputTensorInfo.GetElementType();//1
+#ifdef _DEBUG
+			assert(outputType == 1);
+#endif //_DEBUG
+			std::vector<int64_t> outputDims = outputTensorInfo.GetShape();//1 25200 41
+#ifdef _DEBUG
+			assert(outputDims.size() == 2);
+			assert(outputDims[0] == 1);
+			assert(outputDims[1] == 502);//502 types of lps
+#endif //_DEBUG
+			int64_t outputTensorSize = vectorProduct(outputDims);
+			std::vector<float> outputTensorValues(outputTensorSize);
+			Ort::AllocatorWithDefaultOptions allocator;
+			const char* inputName = session.GetInputName(0, allocator);
+			const char* outputName = session.GetOutputName(0, allocator);
+			std::vector<const char*> inputNames{ inputName };
+			std::vector<const char*> outputNames{ outputName };
+			std::vector<Ort::Value> inputTensors;
+			std::vector<Ort::Value> outputTensors;
+			Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(
+				OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+			inputTensors.push_back(Ort::Value::CreateTensor<float>(
+				memoryInfo, inputTensorValues.data(), inputTensorSize, inputDims.data(),
+				inputDims.size()));
+			outputTensors.push_back(Ort::Value::CreateTensor<float>(
+				memoryInfo, outputTensorValues.data(), outputTensorSize,
+				outputDims.data(), outputDims.size()));
+			// https://github.com/microsoft/onnxruntime/blob/rel-1.6.0/include/onnxruntime/core/session/onnxruntime_cxx_api.h#L353
+			session.Run(Ort::RunOptions{ nullptr }, inputNames.data(), inputTensors.data(), 1, outputNames.data(), outputTensors.data(), 1);
+			size_t dimensionsCount = outputTensorInfo.GetDimensionsCount();//2
+#ifdef _DEBUG
+			assert(dimensionsCount == 2);
+#endif //_DEBUG
+			int predId = 0;
+			float activation = 0;
+			float maxActivation = std::numeric_limits<float>::lowest();
+			float expSum = 0;
+			for (int i = 0; i < outputDims[1]; i++)
+			{
+				activation = outputTensorValues.at(i);
+				expSum += std::exp(activation);
+				if (activation > maxActivation)
+				{
+					predId = i;
+					maxActivation = activation;
+				}
+			}
+			//std::cout << "Predicted Label ID: " << predId << std::endl;
+			//std::cout << "Predicted Label: " << predId << std::endl;
+			uncalibrated_confidence = std::exp(maxActivation) / expSum;
+			//std::cout << "Uncalibrated Confidence: " << uncalibrated_confidence	<< std::endl;
+			int classe = predId;
+			return classe;
+		}
+		uncalibrated_confidence = 0.0f;
+		return -1;
+	}
+	std::string Plates_types_classifier::GetPlatesType(const cv::Mat& img, float& uncalibrated_confidence) {
+		int classe = GetPlatesClasse(img, uncalibrated_confidence);
+		if (classe >= 0 && classe < labels.size()) {
+			return labels[classe];
+		}
+		else {
+			uncalibrated_confidence = 0.0f;
+			return std::string();
+		}
+	}
+	//nov 21 update this func with plates_types_classifier classifier
+	//For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+//Uses double linked lists : inside list is for characters and outside list is for plates.
+	void Plates_types_classifier::get_best_plate(const cv::Mat& frame,
+		//detections when they are separated license plates by license plates
+		const std::list < std::vector<int>>& classIds, const std::list < std::vector<float>>& confidences, const std::list < std::vector<cv::Rect>>& boxes
+		//output the list of the best (most probable/readable) lp
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp)
+	{
+		std::list < std::vector<cv::Rect>>::const_iterator it_boxes(boxes.begin());
+		std::list < std::vector<float>>::const_iterator it_confidences(confidences.begin());
+		std::list < std::vector<int>>::const_iterator it_classIds(classIds.begin());
+		float best_score = 0.0f;
+		float uncalibrated_confidence;
+		std::string plate_type = GetPlatesType(frame, uncalibrated_confidence);
+		bool bi_level_plate_type = (plate_type.find('_') != std::string::npos);
+		int distance_to_plates_type = 1000;
+		std::string found_plates_type;
+		std::list <std::string > l_plates_type;
+		const int number_of_characters_latin_numberplate = 36;
+		while (it_boxes != boxes.end()
+			&& it_confidences != confidences.end() && it_classIds != classIds.end()) {
+#ifdef _DEBUG		
+			assert(it_classIds->size() == it_confidences->size() && it_classIds->size() == it_boxes->size() && it_classIds->size() >= 2);
+			//1;->ok
+		//2;->size too small
+		//4;->second detection is not a vehicle
+		//6;->detection after first two ones, is not a character
+			int ids_are_ok = is_detections_of_a_unique_license_plate(*it_classIds);
+			assert(ids_are_ok == 1);
+#endif //_DEBUG
+			float current_score = //(float)(it_boxes->size() - 2) * 
+				//From confidences of detections of all boxes of a plate, we get the average confidence.
+				//(it_boxes->front().width * it_boxes->front().height) * 
+				get_average_confidence_of_license_plate(*it_classIds,
+					*it_confidences);
+			std::string current_plate_type = get_plate_type(
+				*it_boxes,
+				*it_classIds, number_of_characters_latin_numberplate
+			);
+			l_plates_type.push_back(current_plate_type);
+			Levenshtein lev;
+			int editdistance = lev.Get(current_plate_type.c_str(), current_plate_type.length(), plate_type.c_str(), plate_type.length());
+			if (distance_to_plates_type > editdistance) {
+				distance_to_plates_type = editdistance;
+				found_plates_type = current_plate_type;
+			}
+			if (best_score < current_score)
+			{
+				best_score = current_score;
+				confidence_one_lp.clear();
+				one_lp.clear();
+				classIds_one_lp.clear();
+				std::copy(it_confidences->begin(), it_confidences->end(), std::back_inserter(confidence_one_lp));
+				std::copy(it_boxes->begin(), it_boxes->end(), std::back_inserter(one_lp));
+				std::copy(it_classIds->begin(), it_classIds->end(), std::back_inserter(classIds_one_lp));
+			}
+			it_boxes++;
+			it_confidences++;
+			it_classIds++;
+		}
+		if (uncalibrated_confidence > 0.1f) {
+			best_score = 0.0f;
+			it_boxes = (boxes.begin());
+			it_confidences = (confidences.begin());
+			it_classIds = (classIds.begin());
+			std::list < std::string>::const_iterator it_plates_types(l_plates_type.begin());
+			while (it_plates_types != l_plates_type.end()
+				&& it_boxes != boxes.end()
+				&& it_confidences != confidences.end() && it_classIds != classIds.end()) {
+				Levenshtein lev;
+				int editdistance = lev.Get(it_plates_types->c_str(), it_plates_types->length(), plate_type.c_str(), plate_type.length());
+				if (editdistance == distance_to_plates_type) {
+					float current_score = //(float)(it_boxes->size() - 2) * 
+						//From confidences of detections of all boxes of a plate, we get the average confidence.
+						//(it_boxes->front().width * it_boxes->front().height) * 
+						get_average_confidence_of_license_plate(*it_classIds,
+							*it_confidences);
+					if (best_score < current_score)
+					{
+						best_score = current_score;
+						confidence_one_lp.clear();
+						one_lp.clear();
+						classIds_one_lp.clear();
+						std::copy(it_confidences->begin(), it_confidences->end(), std::back_inserter(confidence_one_lp));
+						std::copy(it_boxes->begin(), it_boxes->end(), std::back_inserter(one_lp));
+						std::copy(it_classIds->begin(), it_classIds->end(), std::back_inserter(classIds_one_lp));
+					}
+				}
+				it_boxes++;
+				it_confidences++;
+				it_classIds++;
+				it_plates_types++;
+			}
+		}
+	}
+	//nov 21 update this func with plates_types_classifier classifier
+	//For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+	void Plates_types_classifier::get_best_plate(const cv::Mat& frame,
+		//detections when they are separated license plates by license plates
+		const std::list < std::list<int>>& classIds, const std::list < std::list<float>>& confidences, const std::list < std::list<cv::Rect>>& boxes
+		//output the list of the best (most probable/readable) lp
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp)
+	{
+		std::list < std::list<cv::Rect>>::const_iterator it_boxes(boxes.begin());
+		std::list < std::list<float>>::const_iterator it_confidences(confidences.begin());
+		std::list < std::list<int>>::const_iterator it_classIds(classIds.begin());
+		float best_score = 0.0f;
+		float uncalibrated_confidence;
+		std::string plate_type = GetPlatesType(frame, uncalibrated_confidence);
+		bool bi_level_plate_type = (plate_type.find('_') != std::string::npos);
+		int distance_to_plates_type = 1000;
+		std::string found_plates_type;
+		std::list <std::string > l_plates_type;
+		const int number_of_characters_latin_numberplate = 36;
+		while (it_boxes != boxes.end()
+			&& it_confidences != confidences.end() && it_classIds != classIds.end()) {
+#ifdef _DEBUG		
+			assert(it_classIds->size() == it_confidences->size() && it_classIds->size() == it_boxes->size() && it_classIds->size() >= 2);
+			//1;->ok
+		//2;->size too small
+		//4;->second detection is not a vehicle
+		//6;->detection after first two ones, is not a character
+			int ids_are_ok = is_detections_of_a_unique_license_plate(*it_classIds);
+			assert(ids_are_ok == 1);
+#endif //_DEBUG
+			float current_score = //(float)(it_boxes->size() - 2) * 
+				//From confidences of detections of all boxes of a plate, we get the average confidence.
+				//(it_boxes->front().width * it_boxes->front().height) * 
+				get_average_confidence_of_license_plate(*it_classIds,
+					*it_confidences);
+			std::string current_plate_type = get_plate_type(
+				*it_boxes,
+				*it_classIds, number_of_characters_latin_numberplate
+			);
+			l_plates_type.push_back(current_plate_type);
+			Levenshtein lev;
+			int editdistance = lev.Get(current_plate_type.c_str(), current_plate_type.length(), plate_type.c_str(), plate_type.length());
+			if (distance_to_plates_type > editdistance) {
+				distance_to_plates_type = editdistance;
+				found_plates_type = current_plate_type;
+			}
+			if (best_score < current_score)
+			{
+				best_score = current_score;
+				confidence_one_lp.clear();
+				one_lp.clear();
+				classIds_one_lp.clear();
+				std::copy(it_confidences->begin(), it_confidences->end(), std::back_inserter(confidence_one_lp));
+				std::copy(it_boxes->begin(), it_boxes->end(), std::back_inserter(one_lp));
+				std::copy(it_classIds->begin(), it_classIds->end(), std::back_inserter(classIds_one_lp));
+			}
+			it_boxes++;
+			it_confidences++;
+			it_classIds++;
+		}
+#ifdef _DEBUG		
+		if (distance_to_plates_type == 1) {
+			std::cout << "distance_to_plates_type : " << distance_to_plates_type << std::endl;
+			std::cout << "plates_type from yolov4 detector: " << found_plates_type << std::endl;
+			std::cout << "plate_type from image classifier: " << plate_type << std::endl;
+		}
+#endif //_DEBUG
+		if (uncalibrated_confidence > 1.4f) {
+			best_score = 0.0f;
+			found_plates_type = "";
+			it_boxes = (boxes.begin());
+			it_confidences = (confidences.begin());
+			it_classIds = (classIds.begin());
+			std::list < std::string>::const_iterator it_plates_types(l_plates_type.begin());
+			while (it_plates_types != l_plates_type.end()
+				&& it_boxes != boxes.end()
+				&& it_confidences != confidences.end() && it_classIds != classIds.end()) {
+				Levenshtein lev;
+				int editdistance = lev.Get(it_plates_types->c_str(), it_plates_types->length(), plate_type.c_str(), plate_type.length());
+				if (editdistance == distance_to_plates_type) {
+					float current_score = //(float)(it_boxes->size() - 2) * 
+						//From confidences of detections of all boxes of a plate, we get the average confidence.
+						//(it_boxes->front().width * it_boxes->front().height) * 
+						get_average_confidence_of_license_plate(*it_classIds,
+							*it_confidences);
+					if (best_score < current_score)
+					{
+						best_score = current_score;
+						found_plates_type = *it_plates_types;
+						confidence_one_lp.clear();
+						one_lp.clear();
+						classIds_one_lp.clear();
+						std::copy(it_confidences->begin(), it_confidences->end(), std::back_inserter(confidence_one_lp));
+						std::copy(it_boxes->begin(), it_boxes->end(), std::back_inserter(one_lp));
+						std::copy(it_classIds->begin(), it_classIds->end(), std::back_inserter(classIds_one_lp));
+					}
+				}
+				it_boxes++;
+				it_confidences++;
+				it_classIds++;
+				it_plates_types++;
+			}
+		}
+		if (uncalibrated_confidence > 1.8f) {
+			std::list<cv::Rect> boxes_tmp;
+			std::copy(one_lp.begin(), one_lp.end(), std::back_inserter(boxes_tmp));
+			std::list<int> classIds_tmp;
+			std::copy(classIds_one_lp.begin(), classIds_one_lp.end(), std::back_inserter(classIds_tmp));
+			//filter out lpn box
+			//***************************************************
+			//                  FILTER
+			//***************************************************
+			filter_out_everything_but_characters(boxes_tmp,
+				classIds_tmp);
+			sort_from_left_to_right(boxes_tmp, classIds_tmp);
+			std::string lpn = get_lpn(classIds_tmp);
+			if (plates_types_differ_with_one_character(found_plates_type, lpn, plate_type)) {
+#ifdef _DEBUG		
+				assert(one_lp.size() == confidence_one_lp.size() && one_lp.size() == classIds_one_lp.size() && one_lp.size());
+#endif //_DEBUG
+				std::list<cv::Rect>::const_iterator it_boxes_tmp(boxes_tmp.begin());
+				std::list<int>::iterator it_classIds_tmp(classIds_tmp.begin());
+				std::string::const_iterator it1(lpn.begin());
+				while (it_boxes_tmp != boxes_tmp.end()
+					&& it_classIds_tmp != classIds_tmp.end() && it1 != lpn.end()) {
+					std::list<cv::Rect>::const_iterator it_boxes(one_lp.begin());
+					std::list<int>::iterator it_classIds(classIds_one_lp.begin());
+					int index = 0;
+					while (it_boxes != one_lp.end()
+						&& it_classIds != classIds_one_lp.end()) {
+						if (*it_classIds >= 0 && *it_classIds < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE && *it_boxes == *it_boxes_tmp) {
+							assert(*it_classIds >= 0 && *it_classIds < NUMBER_OF_CARACTERS_LATIN_NUMBERPLATE);
+							int classId = get_index(*it1);
+							*it_classIds = classId;
+						}
+						it_boxes++;
+						it_classIds++;
+					}
+					it1++;
+					it_boxes_tmp++;
+					it_classIds_tmp++;
+				}
+			}
+		}
+	}

@@ -17,6 +17,46 @@ GNU General Public License for more details.
 #if !defined(YOLOV5_ANPR_ONNX_DETECTOR)
 #define YOLOV5_ANPR_ONNX_DETECTOR
 #include "ONNX_detector.h"
+class Plates_types_classifier : public OnnxDetector
+{
+public:
+	//**************************
+  //   construct/destruct
+  //**************************
+	Plates_types_classifier(Ort::Env& env, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options
+		, const std::vector<std::string>& labels_);
+	Plates_types_classifier(Ort::Env& env, const ORTCHAR_T* model_path, const Ort::SessionOptions& options
+		, const std::vector<std::string>& labels_);
+	Plates_types_classifier(Ort::Env& env, const ORTCHAR_T* model_path, const Ort::SessionOptions& options
+		, const std::string& labels_filename);
+	Plates_types_classifier(Ort::Env& env, const void* model_data, size_t model_data_length, const Ort::SessionOptions& options
+		, const std::string& labels_filename);
+	OnnxDetector& get_ref() {
+		return *this;
+	};
+	const Plates_types_classifier& get_const_ref() {
+		return *this;
+	};
+	virtual ~Plates_types_classifier();
+	std::string GetPlatesType(const cv::Mat& img, float& uncalibrated_confidence);
+	void get_best_plate(const cv::Mat& frame,
+		//detections when they are separated license plates by license plates
+		const std::list < std::list<int>>& classIds, const std::list < std::list<float>>& confidences, const std::list < std::list<cv::Rect>>& boxes
+		//output the list of the best (most probable/readable) lp
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp);
+	//nov 21 update this func with plates_types_classifier classifier
+	//uses double linked lists : inside list is for characters and outside list is for plates.
+	//For each plate in the image, the detections have been separated. From these, we select the detections of the plates that have have the best detection score.
+	void get_best_plate(const cv::Mat& frame,
+		//detections when they are separated license plates by license plates
+		const std::list < std::vector<int>>& classIds, const std::list < std::vector<float>>& confidences, const std::list < std::vector<cv::Rect>>& boxes
+		//output the list of the best (most probable/readable) lp
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp);
+private:
+	int GetPlatesClasse(const cv::Mat& img, float& uncalibrated_confidence);
+protected:
+	std::vector<std::string> labels;
+};
 class Yolov5_anpr_onxx_detector : public OnnxDetector
 {
 public:
@@ -33,6 +73,7 @@ public:
 	};
 	virtual ~Yolov5_anpr_onxx_detector();
 	/** @brief Given the @p input frame, create input blob, run net then, from result detections, assembies license plates present in the input image.
+	* uses double linked lists : inside list is for characters and outside list is for plates.
 	 *  @param[in]  frame : input image.
 	 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
 	 *  @param[out] confidences : detection confidences of detected bounding boxes
@@ -53,6 +94,7 @@ public:
 		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
 		float nmsThreshold);
 	/** @brief Given the @p input frame, create input blob, run net then, from result detections, assembies license plates present in the input image.
+	* uses double linked lists : inside list is for characters and outside list is for plates.
 	 *  @param[in]  frame : input image.
 	 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
 	 *  @param[out] confidences : detection confidences of detected bounding boxes
@@ -90,6 +132,7 @@ public:
 	// Given the @p input frame, create input blob, run net and return result detections.
 	//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
 	//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+	//Produces double linked lists : inside list is for characters and outside list is for plates.
 	/** @brief
 	*  @param[in]  frame : input image.
 	 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
@@ -123,89 +166,8 @@ public:
 		std::list<std::string>& lpns,
 		const int classId_last_country,
 		const float confThreshold = 0.7f, float nmsThreshold = 0.5f);
-	// Given the @p input frame, create input blob, run net and return result detections.
-//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
-		/** @brief from image frame, extract directly license plate number.
-					 *  @param[in]  frame : input image.
-					 @param[in] ExactLPN : the actual license plate number in the image
-					 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
-					 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
-					 *  @param[out] confidences : detection confidences of detected bounding boxes
-					 *  @param[out] boxes : A set of bounding boxes.
-					 @param[in] classId_last_country : is the class index of the last country in the list of detected classes.
-@param[out] best_boxes :set of detected boxes that compose the lp that has the best confidence
-			@param[out] best_confidences : confidences corresponding detected boxes
-			@param[out] best_classes : set of indeces of the above detected boxes
-					 */
-	int evaluate_without_lpn_detection(const cv::Mat& frame, const std::string& ExactLPN, std::list<std::list<int>>& classIds,
-		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-		std::list<std::string>& lpns,
-		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		std::string& best_lpn,
-		//output = characters in nearest lpn 
-		std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes);
-	/** @brief from image frame, extract directly license plate number.
-			 *  @param[in]  image_filename : filename of the he input image.
-			 @param[in] ExactLPN : the actual license plate number in the image
-			 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
-			 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
-			 *  @param[out] confidences : detection confidences of detected bounding boxes
-			 *  @param[out] boxes : A set of bounding boxes.
-			 @param[in] classId_last_country : is the class index of the last country in the list of detected classes.
-@param[out] best_boxes :set of detected boxes that compose the lp that has the best confidence
-			@param[out] best_confidences : confidences corresponding detected boxes
-			@param[out] best_classes : set of indeces of the above detected boxes
-			*/
-	int evaluate_without_lpn_detection(const std::string& image_filename, const std::string& ExactLPN, std::list<std::list<int>>& classIds,
-		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-		std::list<std::string>& lpns,
-		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		std::string& best_lpn,
-		//output = characters in nearest lpn 
-		std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes
-	);
-	// Given the @p input frame, create input blob, run net and return result detections.
-	//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-	//output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-	//and remaining elements are characters
-	void evaluate_without_lpn_detection(const cv::Mat& frame, std::list<std::list<int>>& classIds,
-		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-		std::list<std::string>& lpns,
-		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		std::string& best_lpn,
-		//output = characters in nearest lpn 
-		std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes);
-	void evaluate_without_lpn_detection(const cv::Mat& frame, std::string& best_lpn);
-	void evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame, std::string& lpn);
-	// Given the @p input frame, create input blob, run net and return result detections.
-	//this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
-	//output lists looks like : first box = license plate (either a detected box either the global rect englobing other boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-	//and remaining elements are characters
-	void evaluate_without_lpn_detection(const std::string& image_filename, std::list<std::list<int>>& classIds,
-		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes,
-		std::list<std::string>& lpns,
-		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.
-		std::string& best_lpn,
-		//output = characters in nearest lpn 
-		std::list<float>& best_confidences, std::list<int>& best_classes, std::list<cv::Rect>& best_boxes
-	);
-	/** @brief from image dir, extract license plate numbers.
-this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
-Difference between this func and detect func is that
-evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
-	 *  @param[in]  dir : directory path that contains all images files that will be proceeded.
-	 *  @param[in]  freeflow_detectors : yolo detectors that detect license plates in images that are not focused and that can contain multiple license plates.
-	 *  @param[in]  parking_detectors : yolo detectors that read characters in a localized and focused license plate in image
- *  @param[in] confThreshold A threshold used to filter boxes by confidences.
- *  @param[in] nmsThreshold A threshold used in non maximum suppression.
-	 * @return void
-		* @see
-	 */
-	float evaluate_lpn_with_lpn_detection(const std::string& dir,
-		const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
-		const float confThreshold = 0.7f, const float nmsThreshold = 0.5f);
+	void two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame, std::string& lpn);
+	void two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, Plates_types_classifier& plates_types_classifier, const cv::Mat& frame, std::string& lpn);
 	/** @brief Given the @p input frame, create input blob, run net and return result detections.
 		 *  @param[in]  frame : input image.
 		 *  @param[out] classIds : classes indeces in resulting detected bounding boxes.
@@ -231,25 +193,25 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	/** @brief from image dir, extract license plate numbers.
 	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 	Difference between this func and detect func is that
-	evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 		 *  @param[in]  dir : directory path that contains all images files that will be proceeded.
 		* @return void
 			* @see
 		 */
-	float evaluate_lpn_with_lpn_detection(const std::string& dir);
+	float two_stage_lpr(const std::string& dir);
 	/** @brief from image dir, extract license plate numbers.
 	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 	Difference between this func and detect func is that
-	evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 		 *  @param[in]  dir : directory path that contains all images files that will be proceeded.
 		* @return void
 			* @see
 		 */
-	float evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const std::string& dir);
+	float two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const std::string& dir);
 	/** @brief from image dir, extract license plate numbers.
 	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 	Difference between this func and detect func is that
-	evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 		 *  @param[in]  frame : input image.
 		 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
 		 @param[in] classes : set of indeces that indicate the classes of each of these detected boxes
@@ -259,7 +221,28 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 		 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 		 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 		 */
-	void evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame,
+	void two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const cv::Mat& frame,
+		//double linked lists to separate lps
+		std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+		std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+		//detection inside the chosen lp
+		std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+	);
+	/** @brief from image dir, extract license plate numbers.
+	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+	Difference between this func and detect func is that
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+		 *  @param[in]  frame : input image.
+		 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
+		 @param[in] classes : set of indeces that indicate the classes of each of these detected boxes
+		 *  @param[out] confidences : detection confidences of detected bounding boxes
+		 *  @param[out] boxes : A set of bounding boxes.
+		 *  @param[out] chosen_lp_classIds : set of indeces that indicate the classes of each box of the license plate that has been chosen by engine (ie the one with the highest confidence)
+		 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
+		 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
+		 */
+		void two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, Plates_types_classifier& plates_types_classifier, const cv::Mat& frame,
 		//double linked lists to separate lps
 		std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -270,7 +253,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	/** @brief from image frame, extract license plate number.
 	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 	Difference between this func and detect func is that
-	evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 			 *  @param[in]  image_filename : filename of the he input image.
 			 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
 			 @param[in] classes : set of indeces that indicate the classes of each of these detected boxes
@@ -280,7 +263,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 		 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 		 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 			 */
-	void evaluate_lpn_with_lpn_detection(Yolov5_anpr_onxx_detector& parking_detector, const std::string& image_filename,
+	void two_stage_lpr(Yolov5_anpr_onxx_detector& parking_detector, const std::string& image_filename,
 		//double linked lists to separate lps
 		std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -291,7 +274,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	/** @brief from image filename, extract license plate number.
 	this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 	Difference between this func and detect func is that
-	evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+	two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 	*  @param[in]  image_filename : filename of the he input image.
 			 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
 			 @param[in] classes : set of indeces that indicate the classes of each of these detected boxes
@@ -301,7 +284,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 		 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 		 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 			 */
-	void evaluate_lpn_with_lpn_detection(const std::string& image_filename,
+	void two_stage_lpr(const std::string& image_filename,
 		//double linked lists to separate lps
 		std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 		//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
@@ -311,7 +294,8 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	);
 	/** @brief Given the @p input frame, create input blob, run net and return result detections.
 	//output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
-//and remaining elements are characters
+//and remaining elements are characters. 
+//Produces double linked lists : inside list is for characters and outside list is for plates.
 	 *  @param[in]  frame : The input image.
 	 *  @param[out] classIds Class indexes in result detection.
 	 *  @param[out] confidences : detection confidences of detected bounding boxes
@@ -349,6 +333,27 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp,
 		const int classId_last_country,
 		//const C_OCROutputs& availableAlpha,
+		float nmsThreshold);
+	//
+	//Given the @p input frame, create input blob, run net and return result detections.
+	//it selects just one lpn although all lps are detected in double linked lists
+	////this func can manage list of boxes of characters that dont have an englobing lp box (gloabal rect)
+	////output lists look like : first box = license plate (either a detected box either the global rect englobing characters boxes, second element = vehicle (either a detected vehicle either (0,0,0,0)
+	////and remaining elements are characters
+	//Produces double linked lists : inside list is for characters and outside list is for plates.
+	//			  
+	void detect_lpn_and_add_lp_and_vehicle_if_necessary(const cv::Mat& frame, Plates_types_classifier& plates_types_classifier, std::list < std::vector<int>>& classIds,
+		std::list < std::vector<float>>& confidences, std::list < std::vector<cv::Rect>>& boxes
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp,
+		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.We remember that ascii(latin) characters come fist(36 classes) then come the license plates countries(another 60 classses) then come a long list of vehicles classes
+		//const C_OCROutputs & availableAlpha,
+		const float confThreshold, float nmsThreshold);
+	//Given the @p input frame, create input blob, run net then, from result detections, assembly license plates present in the input image.
+	void detect_with_different_confidences_then_separate_plates(const cv::Mat& frame, Plates_types_classifier& plates_types_classifier, std::list < std::list<int>>& classIds,
+		std::list < std::list<float>>& confidences, std::list < std::list<cv::Rect>>& boxes
+		, std::list<float>& confidence_one_lp, std::list < cv::Rect>& one_lp, std::list<int>& classIds_one_lp,
+		const int classId_last_country,//classId_last_country : is the class index of the last country in the list of detected classes.We remember that ascii(latin) characters come fist(36 classes) then come the license plates countries(another 60 classses) then come a long list of vehicles classes
+		//const C_OCROutputs & availableAlpha,
 		float nmsThreshold);
 	/** @brief Given the @p input frame, create input blob, run net then, from result detections, assembies license plates present in the input image.
 						//it selects just one lpn although all lps have been detected and stored in double linked lists, then from these lists, selects the one that is the best
@@ -398,7 +403,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 /** @brief from image filename, extract license plate number.
 this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 Difference between this func and detect func is that
-evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 		 *  @param[in]  freeflow_detectors : yolo detectors that detect license plates in images that are not focused and that can contain multiple license plates.
 		*  @param[in]  parking_detectors : yolo detectors that read characters in a localized and focused license plate in image
 	  *  @param[in]  image_filename : filename of the he input image.
@@ -410,7 +415,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 	 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 		 */
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
 	const std::string& image_filename,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
@@ -419,12 +424,40 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 	//detection inside the chosen lp
 	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
 );
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const cv::Mat& frame,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+//make a bounding box greater (just to be sure we don t miss something in detections)
+void get_larger_roi(cv::Rect& lpn_roi, const int width, const int height
+);
+//make a bounding box greater (just to be sure we don t miss something in detections)
+void get_larger_roi(cv::Rect& lpn_roi, const int width, const int height, const float& scale_x, const float& scale_y
+);
 Yolov5_anpr_onxx_detector* get_detector_with_smallest_size_bigger_than_image(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const int max_size);
 Yolov5_anpr_onxx_detector* get_detector_with_smallest_size_bigger_than_image(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const int width, const int height);
 /** @brief from image frame, extract license plate number.
 this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 Difference between this func and detect func is that
-evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 		 *  @param[in]  freeflow_detectors : yolo detectors that detect license plates in images that are not focused and that can contain multiple license plates.
 		*  @param[in]  parking_detectors : yolo detectors that read characters in a localized and focused license plate in image
 	  *  @param[in]  frame : input image.
@@ -436,7 +469,7 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 	 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 		 */
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors,
 	const cv::Mat& frame,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
@@ -448,7 +481,7 @@ void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>
 /** @brief from image filename, extract license plate number.
 this performs a two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
 Difference between this func and detect func is that
-evaluate_lpn_with_lpn_detection first focus on license plate detection and secondly on its characters. This is supposed to get best results.
+two_stage_lpr first focus on license plate detection and secondly on its characters. This is supposed to get best results.
 	 *  @param[in]  image_filename : filename of the he input image.
 	 *  @param[out] lpn : the license plate number found in the image by the dnn detector.
 	 @param[in] classes : set of indeces that indicate the classes of each of these detected boxes
@@ -458,7 +491,50 @@ evaluate_lpn_with_lpn_detection first focus on license plate detection and secon
 	 *  @param[out] chosen_lp_confidences : detection confidences of the corresponding boxes
 	 *  @param[out] chosen_lp_boxes : A set of bounding boxes of the license plate that has been chosen by engine (ie the one with the highest confidence)
 	 */
-void evaluate_lpn_with_lpn_detection(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const std::string& image_filename,
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& detectors, const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+void two_stage_lpr(Yolov5_anpr_onxx_detector& freeflow_detector, Yolov5_anpr_onxx_detector& parking_detector
+	, Plates_types_classifier& plates_types_classifier,
+	const std::string& image_filename,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(const std::list<Yolov5_anpr_onxx_detector*>& freeflow_detectors, const std::list<Yolov5_anpr_onxx_detector*>& parking_detectors
+	, Plates_types_classifier& plates_types_classifier,
+	const cv::Mat& frame,
+	//double linked lists to separate lps
+	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
+	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)
+	std::list <std::string>& lpns, std::list <int>& lp_country_class, std::list < cv::Rect>& lp_rois,
+	//detection inside the chosen lp
+	std::list<int>& chosen_lp_classIds, std::list<float>& chosen_lp_confidences, std::list<cv::Rect>& chosen_lp_boxes
+);
+//two stage lpn detection : first a global nn detects lpn of a free flow vehicle, then a second nn focuses and reads the lpn of the previously detected lpn.
+void two_stage_lpr(Yolov5_anpr_onxx_detector& freeflow_detector, Yolov5_anpr_onxx_detector& parking_detector
+	, Plates_types_classifier& plates_types_classifier,
+	const cv::Mat& frame,
 	//double linked lists to separate lps
 	std::list < std::list<float>>& confidences, std::list < std::list<int>>& classes, std::list < std::list<cv::Rect>>& boxes,
 	//all lps in the image given by lpn (as string), lp country ppronenace (as class index) and lp area in the image (cv::Rect)

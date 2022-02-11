@@ -24,13 +24,24 @@ GNU General Public License for more details.
 #pragma once
 #endif // _MSC_VER > 1000
 #include <stddef.h>
-class Levenshtein  
+/// \brief une classe qui sert à calculer la distance entre deux chaines de caracters 
+/*! \class C_OCROutput
+* \brief une classe qui sert à calculer la distance entre deux chaines de caracters
+**
+*/
+class Levenshtein
 {
 public:
+	//****************************
+	// Get minimum edit (levenstein) between  two strings
+	//****************************
 	int Get  (const char* a, const char* b);
 	int Get  (const char* a, size_t aLen, const char* b, size_t bLen);
     int Get2 (char const *s, char const *t);
     int Get2 (char const *s, size_t n, char const *t, size_t dst);
+	//**************************
+	//   construct/destruct
+	//**************************
 	Levenshtein();
 	virtual ~Levenshtein();
 private:
