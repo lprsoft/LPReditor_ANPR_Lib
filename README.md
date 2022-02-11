@@ -45,7 +45,7 @@ The code is standard c++ and relies on ![ONNXRuntime](https://github.com/microso
 #### (Common) Step 1 : Install ![OpenCV](https://github.com/opencv/opencv) and CUDA & cuDNN (Optional but recommended if you want to use CUDA Execution Provider)
 
 The installation process of CUDA is quite straightforward. You can Install CUDA v11.0 from 
-![here](https://developer.nvidia.com/cuda-11.0-download-archive). Next, install cuDNN by downloading the installer from [here](https://developer.nvidia.com/rdp/cudnn-archive). You also need to download models files, that er too large to be accepted by my github account. Models are available on my drive account here ![here](https://drive.google.com/drive/folders/1NIU2EYfdzRbtgHvdRUY0yJmUzANIqEP9?usp=sharing). Download models.zip file and unzip in /data/ folder.
+[here](https://developer.nvidia.com/cuda-11.0-download-archive). Next, install cuDNN by downloading the installer from [here](https://developer.nvidia.com/rdp/cudnn-archive). You also need to download models files, that er too large to be accepted by my github account. Models are available on my drive account here [here](https://drive.google.com/drive/folders/1NIU2EYfdzRbtgHvdRUY0yJmUzANIqEP9?usp=sharing). Download models.zip file and unzip in /data/ folder.
 ### On Windows :
 #### Step 2 : ![onnxruntime-win-x64-1.x.y](https://github.com/microsoft/onnxruntime/releases)
 Download onnxruntime-win-x64-1.x.y.zip and decompress somewhere. 
