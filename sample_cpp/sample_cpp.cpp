@@ -1,56 +1,11 @@
 // test_LPReditor_ANPR_Lib.cpp : Defines the entry point for the console application.
 //
-//#include "stdafx.h"
 #include "Open_LPReditor_Lib.h"
 #include <string>
 #include <fstream>
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 #include "../include/utils_image_file.h"
-
-
-#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
-void detect_one_image(const std::string& image_filename, const std::string& model_filename) {
-	int flags = -1;//as is
-	cv::Mat frame = cv::imread(image_filename, flags);
-	int channels_ = frame.channels();
-	if (frame.size().width &&
-		frame.size().height && ((channels_ == 1) || (channels_ == 3) || (channels_ == 4))
-		&& (frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
-		size_t step = frame.step;
-		//file path of the model
-		//the model file is in the repo under /data/models/lpreditor_anpr.zip, due to its size (Github limits file size). It must be dezipped to lpreditor_anpr.onnx, after cloning the repo.
-		std::string model_filename = "The/path/to/the/model/that/is/in/repo/lpreditor_anpr.onnx";
-		size_t len = model_filename.size();
-		//allocates a c string to store the read lpn
-		const size_t lpn_len = 15;
-		char lpn[lpn_len] = "\0";
-		//step 1 : Initializes a new detector by loading its model file. In return, you get a unique id.
-		size_t id = init_yolo_detector(len, model_filename.c_str());
-		if (id > 0) {
-			std::cout << "\nModel loaded succesfully\n" << std::endl;
-		}
-		else {
-			std::cerr << "\nModel not loaded error\n" << std::endl;
-			return;
-		}
-		//step 2 : detect_without_lpn_detection lpn in frame
-		//the code below, comes from sample_cpp (in repo) and frame is cv::Mat image instance.
-		bool detected = detect_without_lpn_detection
-		(frame.cols,//width of image
-			frame.rows,//height of image i.e. the specified dimensions of the image
-			frame.channels(),// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-			frame.data, step// source image bytes buffer
-			, id,//id : unique interger to identify the detector to be used
-			lpn_len, lpn//lpn : a c string allocated by the calling program
-		);
-		std::cout << lpn;
-		//step 3: call this func once you have finished with the detector-- > to free memeory
-		bool session_closed = close_detector(id//id : unique interger to identify the detector to be freed
-		);
-	}
-}
-#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_image(const std::string& image_filename, const std::string& model_filename_global_view
 	, const std::string& model_filename_focused_on_lp) {
 	int flags = -1;//as is
@@ -104,87 +59,74 @@ void detect_one_image(const std::string& image_filename, const std::string& mode
 		);
 	}
 }
-#ifdef LPREDITOR_USE_ONE_STAGE_DETECTION
-void detect_one_directory(const std::string& dir, const std::string& model_filename) {
-	//file path of the model
-	//std::string model_filename = "D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/data/models/lpreditor_anpr.onnx";
-	size_t len = model_filename.size();
-	//step 1
-//step 1 : Initializes a new detector by loading its model file. In return, you get a unique id.
-	size_t id = init_yolo_detector(len, model_filename.c_str());
-	if (id > 0) {
-		std::cout << "\nModel loaded succesfully\n" << std::endl;
-	}
-	else {
-		std::cerr << "\nModel not loaded error\n" << std::endl;
-		return;
-	}
-	std::list<std::string> image_filenames;
-	//extracts, from a test directory, all images files that come with an xml file containing the bb coordinates in this image
-	load_images_filenames(dir, image_filenames);
-	std::list<std::string>::const_iterator it_image_filenames(image_filenames.begin());
-	int c = 0;
-	int less_1_editdistance_reads = 0;
-	int miss_reads = 0;
-	int good_reads = 0;
-	while (it_image_filenames != image_filenames.end())
-	{
+void detect_one_image(const std::string& image_filename, const std::string& model_filename_global_view
+	, const std::string& model_filename_focused_on_lp, const std::string& plates_types_classifier_filename
+	, const std::string& plates_types_labels_filename) {
+	int flags = -1;//as is
+	cv::Mat frame = cv::imread(image_filename, flags);
+	int channels_ = frame.channels();
+	if (frame.size().width &&
+		frame.size().height && ((channels_ == 1) || (channels_ == 3) || (channels_ == 4))
+		&& (frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
+		size_t step = frame.step;
+		//file path of the model
+		//the model file is in the repo under /data/models/lpreditor_anpr.zip, due to its size (Github limits file size). It must be dezipped to lpreditor_anpr.onnx, after cloning the repo.
+		std::string model_filename = "The/path/to/the/model/that/is/in/repo/lpreditor_anpr.onnx";
+		size_t len = model_filename.size();
 		//allocates a c string to store the read lpn
 		const size_t lpn_len = 15;
 		char lpn[lpn_len] = "\0";
-		int flags = -1;//as is
-		cv::Mat frame = cv::imread(*it_image_filenames, flags);
-		int channels_ = frame.channels();
-		if (frame.size().width &&
-			frame.size().height && ((channels_ == 1) || (channels_ == 3) || (channels_ == 4))
-			&& (frame.type() == CV_8UC1 || frame.type() == CV_8UC3 || frame.type() == CV_8UC4)) {
-			size_t step = frame.step;
-			//step 2 
-			//detect_without_lpn_detection lpn in frame
-			bool detected = detect_without_lpn_detection
-			(frame.cols,//width of image
-				frame.rows,//height of image i.e. the specified dimensions of the image
-				frame.channels(),// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-				frame.data, step// source image bytes buffer
-				, id,//id : unique interger to identify the detector to be used
-				lpn_len, lpn//lpn : a c string allocated by the calling program
-			);
-			std::string lpn_str(lpn);
-			bool vrai_lpn_after_underscore = true;
-			std::filesystem::path p_(*it_image_filenames);
-			//returns the true license plate number out of a filename
-				//you must place the true license plate number in the image filename this way : number + underscore + license plate number,
-				//for instance filename 0000000001_3065WWA34.jpg will be interpreted as an image with the license plate 3065WWA34 in it.
-			std::string ExactLPN(getTrueLPN(p_.stem().string(), vrai_lpn_after_underscore));
-			Levenshtein lev;
-			int editdistance = lev.Get(ExactLPN.c_str(), ExactLPN.length(), lpn_str.c_str(), lpn_str.length());
-			std::cout << c << " true lpn :" << ExactLPN << " detected lpn :" << lpn_str << " editdistance :" << editdistance << std::endl;
-			//std::cout << "ExactLPN : " << ExactLPN << " read LPN : " << lpn << "edit distance: " << editdistance << std::endl;
-			if (editdistance > 0) miss_reads++;
-			else good_reads++;
-			if (editdistance <= 1) less_1_editdistance_reads++;
-			c++;
-			if ((c % 1000
-				) == 0) {
-				std::cout << c << " perc good reads:" << (float)(good_reads) / (float)(c) << std::endl;
-				std::cout << c << " perc reads less 1 edit distance:" << (float)(less_1_editdistance_reads) / (float)(c) << std::endl;
-#ifdef LPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
-				O << c << " perc good reads:" << (float)(good_reads) / (float)(c) << std::endl;
-				O << c << " perc reads less 1 edit distance:" << (float)(less_1_editdistance_reads) / (float)(c) << std::endl;
-#endif //LPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
-			}
+		//step 1 : Initializes a new detector by loading its model file. In return, you get a unique id. The repo comes with two models namely lpreditor_anpr_focused_on_lpand lpreditor_anpr_global_view.
+		//So you have to call this function twice to initialize both models.
+		size_t id_global_view = init_yolo_detector(len, model_filename_global_view.c_str());
+		if (id_global_view > 0) {
+			std::cout << "\n global_view Model loaded succesfully\n" << std::endl;
 		}
-		it_image_filenames++;
-	}
-	std::cout << c << " perc good reads:" << (float)(good_reads) / (float)(c) << std::endl;
-	std::cout << c << " perc reads less 1 edit distance:" << (float)(less_1_editdistance_reads) / (float)(c) << std::endl;
-
-	//step 3
+		else {
+			std::cerr << "\n global_view Model not loaded error\n" << std::endl;
+			return;
+		}
+		size_t id_focused_on_lp = init_yolo_detector(len, model_filename_focused_on_lp.c_str());
+		if (id_focused_on_lp > 0) {
+			std::cout << "\n focused_on_lp Model loaded succesfully\n" << std::endl;
+		}
+		else {
+			std::cerr << "\n focused_on_lp Model not loaded error\n" << std::endl;
+			id_focused_on_lp = id_global_view;
+		}
+		//NEW : since last version you also need yo initialize a license plates types classifier, which has two files (one onnx file for its model and one txt file for its labels)
+		len = plates_types_classifier_filename.size();
+		size_t id_plates_types_classifier = init_plates_classifer(len, plates_types_classifier_filename.c_str(), plates_types_labels_filename.size(), plates_types_labels_filename.c_str());
+		if (id_plates_types_classifier > 0) {
+			std::cout << "\n plates_types_classifier Model loaded succesfully\n" << std::endl;
+		}
+		else {
+			std::cerr << "\n plates_types_classifier Model not loaded error\n" << std::endl;
+			return  detect_one_image(image_filename, model_filename_global_view
+				, model_filename_focused_on_lp);
+		}
+		//step 2 
+		//two_stage_lpr lpn in frame
+		bool detected = two_stage_lpr_plates_type_detection
+		(frame.cols,//width of image
+			frame.rows,//height of image i.e. the specified dimensions of the image
+			frame.channels(),// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+			frame.data, step// source image bytes buffer
+			, id_global_view, id_focused_on_lp,//id : unique interger to identify the detector to be used
+			id_plates_types_classifier,//unique id  to identify the platestype classifier
+			lpn_len, lpn//lpn : a c string allocated by the calling program
+		);
+		std::cout << lpn;
+		//step 3
 		//call this func once you have finished with the detector-- > to free heap allocated memeory
-	bool session_closed = close_detector(id//id : unique interger to identify the detector to be freed
-	);
+		bool session_closed = close_detector(id_global_view//id : unique interger to identify the detector to be freed
+		);
+		session_closed = close_detector(id_focused_on_lp//id : unique interger to identify the detector to be freed
+		);
+		session_closed = close_plates_types_classifier(id_plates_types_classifier//id : unique interger to identify the classifier to be freed
+		);
+	}
 }
-#endif //LPREDITOR_USE_ONE_STAGE_DETECTION
 void detect_one_directory(const std::string& dir, const std::string& model_filename_global_view
 	, const std::string& model_filename_focused_on_lp) {
 #ifdef LPREDITOR_DEMO_PRINT_STATS_IN_TXT_FILE
@@ -265,7 +207,6 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 				) == 0) {
 				std::cout << c << " perc good reads:" << (float)(good_reads) / (float)(c) << std::endl;
 				std::cout << c << " perc reads less 1 edit distance:" << (float)(less_1_editdistance_reads) / (float)(c) << std::endl;
-
 			}
 		}
 		it_image_filenames++;
@@ -283,14 +224,9 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 	session_closed = close_detector(id_focused_on_lp//id : unique interger to identify the detector to be freed
 	);
 }
-
-
-
-
 void detect_one_directory(const std::string& dir, const std::string& model_filename_global_view
 	, const std::string& model_filename_focused_on_lp, const std::string& plates_types_classifier_filename
 	, const std::string& plates_types_labels_filename) {
-
 	//file path of the model
 	//std::string model_filename = "D:/Programmation/LPReditor-engine/LPReditor_ANPR_Lib/data/models/lpreditor_anpr.onnx";
 	size_t len = model_filename_global_view.size();
@@ -315,7 +251,7 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 	}
 	//NEW : since last version you also need yo initialize a license plates types classifier, which has two files (one onnx file for its model and one txt file for its labels)
 	len = plates_types_classifier_filename.size();
-	size_t id_plates_types_classifier = init_plates_classifer(len, plates_types_classifier_filename.c_str(), plates_types_labels_filename.size(), plates_types_labels_filename.c_str() );
+	size_t id_plates_types_classifier = init_plates_classifer(len, plates_types_classifier_filename.c_str(), plates_types_labels_filename.size(), plates_types_labels_filename.c_str());
 	if (id_plates_types_classifier > 0) {
 		std::cout << "\n plates_types_classifier Model loaded succesfully\n" << std::endl;
 	}
@@ -323,8 +259,6 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 		std::cerr << "\n plates_types_classifier Model not loaded error\n" << std::endl;
 		return detect_one_directory(dir, model_filename_global_view, model_filename_focused_on_lp);
 	}
-
-
 	std::list<std::string> image_filenames;
 	//extracts, from a test directory, all images files that come with an xml file containing the bb coordinates in this image
 	load_images_filenames(dir, image_filenames);
@@ -385,7 +319,6 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 	}
 	std::cout << c << " perc good reads:" << (float)(good_reads) / (float)(c) << std::endl;
 	std::cout << c << " perc reads less 1 edit distance:" << (float)(less_1_editdistance_reads) / (float)(c) << std::endl;
-
 	//step 3
 		//call this func once you have finished with the detector-- > to free heap allocated memeory
 	bool session_closed = close_detector(id_global_view//id : unique interger to identify the detector to be freed
@@ -395,16 +328,6 @@ void detect_one_directory(const std::string& dir, const std::string& model_filen
 	session_closed = close_plates_types_classifier(id_plates_types_classifier//id : unique interger to identify the classifier to be freed
 	);
 }
-
-
-
-
-
-
-
-
-
-
 static void help(char** argv)
 {
 	std::cout << "\nThis program demonstrates the automatic numberplate recognition API named LPReditor_ANPR_Lib\n"
@@ -426,10 +349,10 @@ static void help(char** argv)
 }
 int main(int argc, char* argv[])
 {
+#undef LPREDITOR_DEMO_NO_ARGS//undefine this preprocessor flag if you want cli
 #ifdef LPREDITOR_DEMO_NO_ARGS
 	const int argc_ = 7;
 	const char* argv_[argc_];
-
 	argv_[0] = argv[0];
 	argv_[1] = "--image=../../data/images/images test/0000000001_3065WWA34.jpg";//
 	argv_[2] = "--global_view_model=../../data/models/lpreditor_anpr_global_view.onnx";
@@ -438,9 +361,8 @@ int main(int argc, char* argv[])
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_br";
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_eu";
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_us";
-
 	argv_[4] = "--dir=../../data/images/benchmarks-master/endtoend/plate_un";
-argv_[5] = "--plates_types_model=../../data/models/plates_types_7.onnx";
+	argv_[5] = "--plates_types_model=../../data/models/plates_types_7.onnx";
 	argv_[6] = "--plates_types_labels=../../data/models/plates_types_7.txt";
 	cv::CommandLineParser parser(argc_, argv_, "{help h | | }{global_view_model | | }{focused_on_lp_model | | }{image | | }{dir | | }{plates_types_model | | }{plates_types_labels | | }");
 #else //LPREDITOR_DEMO_NO_ARGS
@@ -465,16 +387,12 @@ argv_[5] = "--plates_types_model=../../data/models/plates_types_7.onnx";
 	}
 	std::string global_view_model_filename = (parser.get<std::string>("global_view_model"));
 	std::string focused_on_lp_model_filename = (parser.get<std::string>("focused_on_lp_model"));
-
 	std::string plates_types_model_filename = (parser.get<std::string>("plates_types_model"));
 	std::string plates_types_labels_filename = (parser.get<std::string>("plates_types_labels"));
-
 	if (!global_view_model_filename.size() || !std::filesystem::exists(global_view_model_filename)
 		|| !std::filesystem::is_regular_file(global_view_model_filename)
-		
 		|| !plates_types_model_filename.size() || !std::filesystem::exists(plates_types_model_filename)
 		|| !std::filesystem::is_regular_file(plates_types_model_filename)
-
 		|| !plates_types_labels_filename.size() || !std::filesystem::exists(plates_types_labels_filename)
 		|| !std::filesystem::is_regular_file(plates_types_labels_filename)
 		)
@@ -516,7 +434,7 @@ argv_[5] = "--plates_types_model=../../data/models/plates_types_7.onnx";
 		}
 		if (!dir.size() && image_filename.size())
 		{
-			detect_one_image(image_filename, global_view_model_filename, focused_on_lp_model_filename);
+			detect_one_image(image_filename, global_view_model_filename, focused_on_lp_model_filename, plates_types_model_filename, plates_types_labels_filename);
 		}
 		else {
 			//process all images files of a directory
