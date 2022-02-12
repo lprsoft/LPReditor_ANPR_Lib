@@ -1,8 +1,7 @@
-# LPReditor_ANPR_Lib
+*# LPReditor_ANPR_Lib
 C library that performs license plate recognition.
   
 *Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on any latin license plate.*
-- [LPReditor_ANPR_Lib](#lpreditor_anpr_lib)
 - [C API](#c-api)
 	- [Building the API](#building-the-api)
 			- [(Common) Step 1 : Install !OpenCV and CUDA & cuDNN (Optional but recommended if you want to use CUDA Execution Provider)](#common-step-1--install--and-cuda--cudnn-optional-but-recommended-if-you-want-to-use-cuda-execution-provider)
@@ -19,8 +18,10 @@ C library that performs license plate recognition.
 	- [Usage](#usage)
 	- [API Documentation](#api-documentation)
 		- [*init_yolo_detector*](#init_yolo_detector)
+		- [*init_plates_classifer*](#init_plates_classifer)
 		- [*detect_with_lpn_detection*](#detect_with_lpn_detection)
 		- [*close_detector*](#close_detector)
+		- [*close_plates_types_classifier*](#close_plates_types_classifier)
 - [sample_cpp](#sample_cpp)
 	- [Building sample_cpp](#building-sample_cpp)
 	- [Binary release](#binary-release)
@@ -69,7 +70,7 @@ The use of the library decomposes in three distinct steps. At first, engine init
 This id must be passed, as a parameter, to the two others functions. Second, call the *detect_with_lpn_detection* function, to recognize license plates in images. Parameters of the *detect_with_lpn_detection* function are :
 
 - 4 parameters, to access the image, (preloaded) in memory.
-- the ids of models returned by *init_yolo_detector*.
+- the ids of models returned by *init_yolo_detector* and *init_plates_classifer*.
 - a pointer to a (preallocated) c string (filled, in return, with the license plate number string)
 
 Third, when reading images is ended, call the *close_detector* to free the memory, consumed by the detector (important : pass, as parameter, the id returnned by *init_yolo_detector*). 
@@ -142,7 +143,7 @@ session_closed = close_plates_types_classifier(id_plates_types_classifier//id : 
 ### *init_yolo_detector*
 ```javascript
 /**
-	@brief initializes a new detector, by loading its model file and returns its unique id. The repo comes with two models namely lpreditor_anpr_focused_on_lp and lpreditor_anpr_global_view. So you have to call this function twice to initialize both models (note that it is possible, but not a good idea, to initialize just one model).
+	@brief initializes a new detector, by loading its model file and returns its unique id. The repo comes with two models namely lpreditor_anpr_focused_on_lp and lpreditor_anpr_global_view (these models have to be downloaded from [google drive] (https://drive.google.com/drive/folders/1NIU2EYfdzRbtgHvdRUY0yJmUzANIqEP9?usp=sharing)). So you have to call this function twice to initialize both models (note that it is possible, but not a good idea, to initialize just one model).
 	@param model_file : c string model filename 
 	@param len : length of the model filename
 	@return the id of the new detector
@@ -157,6 +158,22 @@ size_t init_yolo_detector(size_t len, const char* model_file)
 ```
 
 
+### *init_plates_classifer*
+```javascript
+/**
+		@brief initializes a new plates type classifier by loading its model file and returns its unique id
+		@param model_file : c string model filename (must be allocated by the calling program)
+		@param len : length of the model filename
+		@return the id of the new detector
+		@see
+		*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+size_t init_plates_classifer(size_t len, const char* model_file)
+
+```
 ### *detect_with_lpn_detection*
 ```javascript
 /**
@@ -174,20 +191,38 @@ size_t init_yolo_detector(size_t len, const char* model_file)
 	@param lpn : the resulting license plate number as a c string, allocated by the calling program.
 	@return true upon success
 	*/
+
+
+	/**
+			@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
+		please make sure you have initialized the lpreditor_anpr_global_view model in the init_yolo_detector function (see sample_cpp for uses examples).
+		@param width : width of source image
+			@param width : width of source image
+			@param height : height of source image
+			@param pixOpt : pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+			@param *pbData : source image bytes buffer
+			@param step Number of bytes each matrix row occupies. The value should include the padding bytes at
+				the end of each row, if any..See sample_cpp for a use case.
+	@param id_global_view : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
+	@param id_focused_on_lp : unique id to a model initialized in init_yolo_detector function. See init_yolo_detector function.
+	@param id_plates_types_classifier : unique id to a model initialized in init_plates_classifer function. See init_plates_classifer function.
+	@param lpn_len : length of the preallocated c string to store the resulting license plate number.
+	@param lpn : the resulting license plate number as a c string, allocated by the calling program.
+			@return
+			@see
+			*/
 extern "C"
 #ifdef _WINDOWS
 __declspec(dllexport)
 #endif //_WINDOWS
-bool detect_with_lpn_detection
-(const int width,//width of image
-	const int height,//height of image i.e. the specified dimensions of the image
-	const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
-	void* pbData, size_t step// source image bytes buffer
-	, size_t id, size_t lpn_len, char* lpn)
+bool two_stage_lpr_plates_type_detection
+	(const int width,//width of image
+		const int height,//height of image i.e. the specified dimensions of the image
+		const int pixOpt,// pixel type : 1 (8 bpp greyscale image) 3 (RGB 24 bpp image) or 4 (RGBA 32 bpp image)
+		void* pbData, size_t step// source image bytes buffer
+		, size_t id_global_view, size_t id_focused_on_lp, size_t id_plates_types_classifier, size_t lpn_len, char* lpn)
 	
 ```
-
-
 ### *close_detector*
 ```javascript
 /**
@@ -201,6 +236,22 @@ extern "C"
 __declspec(dllexport)
 #endif //_WINDOWS
 bool close_detector(size_t id)
+
+```
+
+### *close_plates_types_classifier*
+```javascript
+/**
+		@brief call this func once you have finished with the classifier --> to free heap allocated memeory
+		@param id : unique interger to identify the classifier to be freed
+		@return true upon success
+		@see
+		*/
+extern "C"
+#ifdef _WINDOWS
+__declspec(dllexport)
+#endif //_WINDOWS
+	bool close_plates_types_classifier(size_t id)
 
 ```
 # sample_cpp
@@ -286,3 +337,4 @@ One error on one character means that the numberplate, read by the engine, diffe
 You can make the test yourself, using the sample_cpp demo project (with command line args like above). 
 
 
+*
