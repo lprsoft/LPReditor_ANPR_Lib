@@ -1,7 +1,8 @@
-*# LPReditor_ANPR_Lib
+# LPReditor_ANPR_Lib
 C library that performs license plate recognition.
   
 *Deep learning number plate recognition engine, based on ![YOLOv5](https://github.com/ultralytics/yolov5) and ![ONNX](https://github.com/onnx/onnx). Operates on any latin license plate.*
+- [LPReditor_ANPR_Lib](#lpreditor_anpr_lib)
 - [C API](#c-api)
 	- [Building the API](#building-the-api)
 			- [(Common) Step 1 : Install !OpenCV and CUDA & cuDNN (Optional but recommended if you want to use CUDA Execution Provider)](#common-step-1--install--and-cuda--cudnn-optional-but-recommended-if-you-want-to-use-cuda-execution-provider)
@@ -19,7 +20,8 @@ C library that performs license plate recognition.
 	- [API Documentation](#api-documentation)
 		- [*init_yolo_detector*](#init_yolo_detector)
 		- [*init_plates_classifer*](#init_plates_classifer)
-		- [*detect_with_lpn_detection*](#detect_with_lpn_detection)
+		- [*two_stage_lpr*](#two_stage_lpr)
+		- [*two_stage_lpr_plates_type_detection*](#two_stage_lpr_plates_type_detection)
 		- [*close_detector*](#close_detector)
 		- [*close_plates_types_classifier*](#close_plates_types_classifier)
 - [sample_cpp](#sample_cpp)
@@ -174,7 +176,7 @@ __declspec(dllexport)
 size_t init_plates_classifer(size_t len, const char* model_file)
 
 ```
-### *detect_with_lpn_detection*
+### *two_stage_lpr*
 ```javascript
 /**
 	@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
@@ -193,6 +195,9 @@ size_t init_plates_classifer(size_t len, const char* model_file)
 	*/
 
 
+```
+### *two_stage_lpr_plates_type_detection*
+```javascript
 	/**
 			@brief detect lpn in frame. This function uses a two stage detection method that requires two models.
 		please make sure you have initialized the lpreditor_anpr_global_view model in the init_yolo_detector function (see sample_cpp for uses examples).
