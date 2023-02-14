@@ -342,4 +342,4 @@ One error on one character means that the numberplate, read by the engine, diffe
 You can make the test yourself, using the sample_cpp demo project (with command line args like above). 
 
 
-For windows users, there exists also an executable, called ![aveditor](www.lpreditor.com/aveditor), that is made freely available. That software allows to detect and recognise vehicles in video files. It is build upon this library.You can download this software ![here](www.lpreditor.com/download)
+For windows users, there exists also an executable, called ![aveditor]([www.](https://lpreditor.com/aveditor), that is made freely available. That software allows to detect and recognise vehicles in video files. It is build upon this library.You can download this software ![here]([www.](https://lpreditor.com/download)
